@@ -61,7 +61,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
 
         // Composer
         Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 100), // Added bottom padding to sit above bar
           child: ChatComposer(groupId: widget.groupId),
         ),
       ],

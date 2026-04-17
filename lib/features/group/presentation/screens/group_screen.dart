@@ -32,41 +32,59 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
         if (group == null) return const Scaffold(body: Center(child: Text('Group not found')));
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF5F5F5), // General light grey base
-          body: Column(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: Stack(
             children: [
-              // 1. Header with Background or Gradient
-              _buildHeader(group),
-
-              // 2. Main Content
-              Expanded(
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: [
-                    BulletinBoardView(groupId: widget.groupId),
-                    ChatView(groupId: widget.groupId),
-                  ],
+              // 1. Main Content (Bottom Layer)
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 140), // Space for header
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: [
+                      BulletinBoardView(groupId: widget.groupId),
+                      ChatView(groupId: widget.groupId),
+                    ],
+                  ),
                 ),
               ),
 
+              // 2. Header (Top Layer)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _buildHeader(group),
+              ),
+
+              // 3. Bottom Navigation (Fixed at bottom)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildGlassBottomBar(),
+              ),
+
+              // 4. FAB (Only on Board)
+              if (_currentIndex == 0)
+                Positioned(
+                  bottom: 90, // Above the green bar
+                  right: 16,
+                  child: FloatingActionButton(
+                    backgroundColor: const Color(0xFF2F7D32),
+                    child: const Icon(Icons.add, color: Colors.white),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => CreatePostItSheet(groupId: widget.groupId),
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
-          bottomNavigationBar: _buildGlassBottomBar(),
-          extendBody: true,
-          floatingActionButton: _currentIndex == 0
-              ? FloatingActionButton(
-                  backgroundColor: const Color(0xFF2F7D32),
-                  child: const Icon(Icons.add, color: Colors.white),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => CreatePostItSheet(groupId: widget.groupId),
-                    );
-                  },
-                )
-              : null,
         );
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
@@ -221,12 +239,17 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                     icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
                     onPressed: () => context.go('/home'),
                   ),
-                  Text(
-                    group.name,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Expanded(
+                    child: Text(
+                      group.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (group.ownerId == ref.watch(authRepositoryProvider).currentUser?.uid)
@@ -245,7 +268,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                       ],
                     )
                   else
-                    const SizedBox(width: 48),
+                    const SizedBox(width: 48), // Spacer to keep title centered
                 ],
               ),
             ),
