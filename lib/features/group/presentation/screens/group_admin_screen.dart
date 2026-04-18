@@ -184,7 +184,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     final membersAsync = ref.watch(groupMembersProvider(widget.groupId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Group Admin'),
         backgroundColor: Colors.transparent,
@@ -194,8 +194,19 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: Stack(
-        children: [
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF2C2C2C),
+              Color(0xFF1A1A1A),
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
           groupAsync.when(
             data: (group) {
               if (group == null) return const Center(child: Text('Group not found'));
