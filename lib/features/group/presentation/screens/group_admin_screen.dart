@@ -353,6 +353,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
               ),
             ),
         ],
+        ),
       ),
     );
   }
