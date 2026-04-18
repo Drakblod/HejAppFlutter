@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../data/auth_repository.dart';
+import '../../../core/services/database_repository.dart';
+import '../../../core/models/user_profile.dart';
 
 part 'auth_providers.g.dart';
 
@@ -17,10 +19,27 @@ class AuthController extends _$AuthController {
     });
   }
 
-  Future<void> register(String email, String password) async {
+  Future<void> register({
+    required String email,
+    required String password,
+    required String username,
+  }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await ref.read(authRepositoryProvider).signUp(email, password);
+      final credential = await ref.read(authRepositoryProvider).signUp(email, password);
+      final uid = credential.user!.uid;
+
+      // Create profile in database
+      final profile = UserProfile(
+        uid: uid,
+        username: username,
+        fullName: username, // Default to username for now
+        email: email,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      await ref.read(databaseRepositoryProvider).createUserProfile(profile);
     });
   }
 

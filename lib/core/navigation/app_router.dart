@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/group/presentation/screens/group_screen.dart';
 import '../../features/group/presentation/screens/group_admin_screen.dart';
@@ -17,10 +18,10 @@ GoRouter appRouter(Ref ref) {
     initialLocation: '/login',
     redirect: (context, state) {
       final isLoggedIn = authState.value != null;
-      final isLoggingIn = state.matchedLocation == '/login';
+      final isAuthPage = state.matchedLocation == '/login' || state.matchedLocation == '/register';
 
-      if (!isLoggedIn && !isLoggingIn) return '/login';
-      if (isLoggedIn && isLoggingIn) return '/home';
+      if (!isLoggedIn && !isAuthPage) return '/login';
+      if (isLoggedIn && isAuthPage) return '/home';
 
       return null;
     },
@@ -28,6 +29,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: '/home',

@@ -13,6 +13,18 @@ class DatabaseRepository {
 
   DatabaseRepository(this._db);
 
+  // --- Users ---
+
+  Future<void> createUserProfile(UserProfile profile) async {
+    await _db.ref('users/${profile.uid}').set(profile.toJson());
+  }
+
+  Future<UserProfile?> getUserProfile(String uid) async {
+    final snapshot = await _db.ref('users/$uid').get();
+    if (!snapshot.exists) return null;
+    return UserProfile.fromJson(uid, snapshot.value as Map<dynamic, dynamic>);
+  }
+
   // --- Groups ---
   
   Stream<List<String>> streamUserGroupIds(String uid) {
