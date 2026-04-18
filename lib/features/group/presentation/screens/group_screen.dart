@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/res/app_themes.dart';
 import '../../providers/board_providers.dart';
 import '../views/bulletin_board_view.dart';
@@ -10,6 +11,7 @@ import '../../../chat/providers/chat_providers.dart';
 import '../../../../features/auth/data/auth_repository.dart';
 import '../../../../core/models/postit.dart';
 import '../../providers/postit_providers.dart';
+import '../widgets/members_list_sheet.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -185,10 +187,14 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('DISCARD')),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+              
               await ref.read(postItControllerProvider.notifier).saveMultiplePostIts(suggestions);
+              
               if (mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to Board!')));
+                navigator.pop();
+                messenger.showSnackBar(const SnackBar(content: Text('Added to Board!')));
                 setState(() => _currentIndex = 0); // Switch to board
               }
             },
@@ -240,17 +246,102 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                     onPressed: () => context.go('/home'),
                   ),
                   Expanded(
-                    child: Text(
-                      group.name,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Hero(
+                          tag: 'group_icon_${group.id}',
+                          child: Text(
+                            group.icon,
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: InkWell(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => MembersListSheet(groupId: widget.groupId),
+                              );
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  group.name,
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  'View Members',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.person_add_outlined, color: Colors.white70),
+                    tooltip: 'Invite Members',
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Invite to Group'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('Share this code with your friends so they can join this group:'),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: SelectableText(
+                                        widget.groupId,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.content_copy, size: 20),
+                                      onPressed: () {
+                                        Clipboard.setData(ClipboardData(text: widget.groupId));
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID copied!')));
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('CLOSE')),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   if (group.ownerId == ref.watch(authRepositoryProvider).currentUser?.uid)
                     Row(

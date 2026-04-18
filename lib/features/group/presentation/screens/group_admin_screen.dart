@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 import '../../providers/board_providers.dart';
 import '../../../../core/services/database_repository.dart';
 import '../../../../core/services/storage_repository.dart';
@@ -216,6 +217,42 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Invite Section
+                    _buildSectionTitle('INVITE OTHERS'),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Group ID / Invite Code', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.groupId, 
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, fontFamily: 'monospace'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy_rounded, color: Colors.blue, size: 20),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: widget.groupId));
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invite code copied!')));
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
                     // General Info
                     _buildSectionTitle('GENERAL INFO'),
                     TextField(

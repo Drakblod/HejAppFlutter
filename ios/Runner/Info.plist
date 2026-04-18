@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>HejApp needs access to your gallery to let you upload profile pictures and group backgrounds.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>HejApp needs access to your camera to let you take profile and group photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>HejApp needs access to your microphone for video recording (if used).</string>
 </dict>
 </plist>

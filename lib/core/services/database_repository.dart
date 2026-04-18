@@ -179,6 +179,25 @@ class DatabaseRepository {
      // So we'd need to fetch them first or use a Cloud Function.
      await _db.ref().update(batch);
   }
+
+  Future<void> joinGroup(String groupId, String userId) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final batch = <String, dynamic>{};
+
+    batch['memberships/$groupId/$userId'] = {
+      'role': 'member',
+      'joinedAt': now,
+    };
+    batch['userGroups/$userId/$groupId'] = true;
+
+    await _db.ref().update(batch);
+  }
+
+  Future<bool> groupExists(String groupId) async {
+    if (groupId.isEmpty) return false;
+    final snapshot = await _db.ref('groups/$groupId').get();
+    return snapshot.exists;
+  }
 }
 
 @riverpod

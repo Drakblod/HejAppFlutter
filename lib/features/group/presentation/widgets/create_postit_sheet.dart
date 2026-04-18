@@ -101,6 +101,8 @@ class _CreatePostItSheetState extends ConsumerState<CreatePostItSheet> {
             onPressed: () async {
               if (_textController.text.trim().isEmpty) return;
               
+              final navigator = Navigator.of(context);
+              
               await ref.read(postItControllerProvider.notifier).savePostIt(
                 groupId: widget.groupId,
                 text: _textController.text.trim(),
@@ -108,7 +110,7 @@ class _CreatePostItSheetState extends ConsumerState<CreatePostItSheet> {
               );
               
               if (!mounted) return;
-              Navigator.pop(context);
+              navigator.pop();
             },
             child: const Text('Pin to Board', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
