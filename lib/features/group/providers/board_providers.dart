@@ -17,8 +17,8 @@ Future<Group?> groupMeta(Ref ref, String groupId) {
 Stream<List<BoardItem>> boardItems(Ref ref, String groupId) {
   final db = ref.watch(databaseRepositoryProvider);
 
-  final messagesStream = db.streamMessages(groupId, limit: 30);
-  final postItsStream = db.streamPostIts(groupId);
+  final messagesStream = db.streamMessages(groupId, limit: 30).startWith([]);
+  final postItsStream = db.streamPostIts(groupId).startWith([]);
 
   return CombineLatestStream.combine2(
     messagesStream,
