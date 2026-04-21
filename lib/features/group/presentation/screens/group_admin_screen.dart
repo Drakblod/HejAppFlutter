@@ -8,7 +8,7 @@ import '../../providers/board_providers.dart';
 import '../../../../core/services/database_repository.dart';
 import '../../../../core/services/storage_repository.dart';
 import '../../../../core/res/app_themes.dart';
-import '../../providers/postit_providers.dart';
+import '../widgets/ai_background_studio.dart';
 
 class GroupAdminScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -22,18 +22,30 @@ class GroupAdminScreen extends ConsumerStatefulWidget {
 class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
   bool _isLoading = false;
   late TextEditingController _nameController;
-  late TextEditingController _aiPromptController;
+  late TextEditingController _boardLabelController;
+  late TextEditingController _chatLabelController;
+  late TextEditingController _filesLabelController;
+  String? _selectedFont;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _aiPromptController = TextEditingController();
-    // Initialize with current name
+    _boardLabelController = TextEditingController();
+    _chatLabelController = TextEditingController();
+    _filesLabelController = TextEditingController();
+    
+    // Initialize with current meta
     Future.microtask(() async {
       final meta = await ref.read(databaseRepositoryProvider).getGroupMeta(widget.groupId);
       if (meta != null) {
-        _nameController.text = meta.name;
+        setState(() {
+          _nameController.text = meta.name;
+          _boardLabelController.text = meta.boardLabel ?? 'BOARD';
+          _chatLabelController.text = meta.chatLabel ?? 'CHAT';
+          _filesLabelController.text = meta.filesLabel ?? 'FILES';
+          _selectedFont = meta.fontFamily;
+        });
       }
     });
   }
@@ -41,8 +53,25 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _aiPromptController.dispose();
+    _boardLabelController.dispose();
+    _chatLabelController.dispose();
+    _filesLabelController.dispose();
     super.dispose();
+  }
+
+  Future<void> _updateIdentity() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
+        'boardLabel': _boardLabelController.text.trim(),
+        'chatLabel': _chatLabelController.text.trim(),
+        'filesLabel': _filesLabelController.text.trim(),
+        'fontFamily': _selectedFont,
+      });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Identity updated!')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _updateName() async {
@@ -97,32 +126,6 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     }
   }
 
-  Future<void> _generateAiBackground() async {
-    final prompt = _aiPromptController.text.trim();
-    if (prompt.isEmpty) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final refinedPrompt = await ref.read(geminiControllerProvider.notifier).generateBackgroundPrompt(prompt);
-      if (refinedPrompt == null) throw 'Failed to generate prompt';
-
-      // Use pollinations.ai for actual image generation from prompt
-      final encodedPrompt = Uri.encodeComponent(refinedPrompt);
-      final imageUrl = "https://image.pollinations.ai/prompt/$encodedPrompt?width=1080&height=1920&model=flux&nologo=true&seed=${DateTime.now().millisecond}";
-
-      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
-        'backgroundImage': imageUrl,
-        'theme': 'custom',
-      });
-      
-      _aiPromptController.clear();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('AI Background generated!')));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   void _onRemoveMember(String userId, String name) async {
     final confirm = await showDialog<bool>(
@@ -311,24 +314,76 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('✨ Generate with AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _aiPromptController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'e.g., "A cozy coffee shop in rainy Tokyo"',
-                            hintStyle: const TextStyle(color: Colors.white24),
-                            filled: true,
-                            fillColor: Colors.white.withValues(alpha: 0.05),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.auto_awesome, color: Colors.amber),
-                              onPressed: _generateAiBackground,
+                        const Text('✨ AI Background Studio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => AIBackgroundStudio(groupId: widget.groupId),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(alpha: 0.05),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: const BorderSide(color: Colors.white10),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
+                                SizedBox(width: 12),
+                                Text(
+                                  'CREATE CUSTOM AI BACKGROUND',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Custom Identity Section
+                    _buildSectionTitle('CUSTOM IDENTITY'),
+                    _buildIdentityField('Board Tab Name', _boardLabelController),
+                    const SizedBox(height: 16),
+                    _buildIdentityField('Chat Tab Name', _chatLabelController),
+                    const SizedBox(height: 16),
+                    _buildIdentityField('Files Tab Name', _filesLabelController),
+                    const SizedBox(height: 24),
+                    const Text('Typography Style:', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildFontButton('Modern', null),
+                        const SizedBox(width: 8),
+                        _buildFontButton('Playful', 'Kenia'),
+                        const SizedBox(width: 8),
+                        _buildFontButton('Classic', 'Lora'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _updateIdentity,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('SAVE IDENTITY CHANGES'),
+                      ),
                     ),
                     const SizedBox(height: 32),
                     
@@ -401,6 +456,45 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
       child: Text(
         title,
         style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color, letterSpacing: 1.1),
+      ),
+    );
+  }
+
+  Widget _buildIdentityField(String label, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(color: Colors.white, fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white60),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      ),
+    );
+  }
+
+  Widget _buildFontButton(String name, String? fontId) {
+    final isSelected = _selectedFont == fontId;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedFont = fontId),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: isSelected ? Colors.blue : Colors.white24),
+          ),
+          child: Text(
+            name,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white70,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
       ),
     );
   }

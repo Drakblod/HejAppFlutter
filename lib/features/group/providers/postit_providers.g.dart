@@ -33,7 +33,7 @@ final class PostItControllerProvider
   PostItController create() => PostItController();
 }
 
-String _$postItControllerHash() => r'65acecb4208890fc1a11fec938370d91afeffeee';
+String _$postItControllerHash() => r'351d8fbe0ea2cfdf2c65925d2011342d1ba8dc1a';
 
 abstract class _$PostItController extends $AsyncNotifier<void> {
   FutureOr<void> build();
@@ -51,50 +51,5 @@ abstract class _$PostItController extends $AsyncNotifier<void> {
               Object?
             >;
     element.handleValue(ref, null);
-  }
-}
-
-@ProviderFor(GeminiController)
-const geminiControllerProvider = GeminiControllerProvider._();
-
-final class GeminiControllerProvider
-    extends $AsyncNotifierProvider<GeminiController, List<PostIt>> {
-  const GeminiControllerProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'geminiControllerProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$geminiControllerHash();
-
-  @$internal
-  @override
-  GeminiController create() => GeminiController();
-}
-
-String _$geminiControllerHash() => r'68898fcabe1cc9b9177e5c3f393aa2feef175f7f';
-
-abstract class _$GeminiController extends $AsyncNotifier<List<PostIt>> {
-  FutureOr<List<PostIt>> build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final created = build();
-    final ref = this.ref as $Ref<AsyncValue<List<PostIt>>, List<PostIt>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<PostIt>>, List<PostIt>>,
-              AsyncValue<List<PostIt>>,
-              Object?,
-              Object?
-            >;
-    element.handleValue(ref, created);
   }
 }

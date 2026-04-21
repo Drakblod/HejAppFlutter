@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/board_item.dart';
+import '../../../profile/providers/profile_providers.dart';
 
-class PostItWidget extends StatelessWidget {
+class PostItWidget extends ConsumerWidget {
   final BoardItem item;
+  final String? fontFamily;
   final VoidCallback? onDelete;
 
-  const PostItWidget({super.key, required this.item, this.onDelete});
+  const PostItWidget({
+    super.key,
+    required this.item,
+    this.fontFamily,
+    this.onDelete,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Dynamically resolve author name
+    final authorAsync = ref.watch(userProfileProvider(item.senderId));
+
     return GestureDetector(
       onLongPress: onDelete != null
           ? () => _showDeleteConfirmation(context)
@@ -18,7 +29,7 @@ class PostItWidget extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: item.backgroundColor,
-          borderRadius: BorderRadius.circular(2), // Very slight rounding like a physical note
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.2),
@@ -33,20 +44,29 @@ class PostItWidget extends StatelessWidget {
             Text(
               item.text,
               textAlign: TextAlign.center,
-              style: GoogleFonts.kenia(
+              style: GoogleFonts.getFont(
+                fontFamily ?? 'Kenia',
                 fontSize: 20,
                 color: item.textColor,
                 height: 1.2,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              item.author,
-              textAlign: TextAlign.end,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Colors.black54,
-                fontStyle: FontStyle.italic,
+            authorAsync.when(
+              data: (profile) => Text(
+                profile?.username ?? item.author,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.black54,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => Text(
+                item.author,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontSize: 10, color: Colors.black54, fontStyle: FontStyle.italic),
               ),
             ),
           ],

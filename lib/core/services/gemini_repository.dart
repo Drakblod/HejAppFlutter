@@ -12,11 +12,11 @@ class GeminiRepository {
 
   GeminiRepository()
       : _model = GenerativeModel(
-          model: 'gemini-1.5-flash',
+          model: 'gemini-pro',
           apiKey: EnvConfig.geminiApiKey,
         ),
         _flashModel = GenerativeModel(
-          model: 'gemini-1.5-flash',
+          model: 'gemini-pro',
           apiKey: EnvConfig.geminiApiKey,
         );
 
@@ -59,19 +59,22 @@ JSON Output:
     }
   }
 
-  /// Generates a high-quality image prompt for a group background based on a user description.
-  Future<String> generateBackgroundPrompt(String userDescription) async {
+  /// Generates a high-quality image prompt for a group background based on a user description and style.
+  Future<String> generateBackgroundPrompt(String userDescription, {String? style}) async {
+    final styleInstruction = style != null ? 'The style should be strictly $style.' : 'The style should be: Minimalist, abstract, or high-quality photography.';
+    
     final prompt = '''
-The user wants a background image for a digital bulletin board / group chat app.
-Their description is: "$userDescription"
+The user wants a professional HD Mobile Wallpaper for a digital group chat.
+Their original idea is: "$userDescription"
 
 Translate this into a high-quality, professional image generation prompt.
-- The style should be: Minimalist, abstract, or high-quality photography.
-- Avoid text in the image.
+- $styleInstruction
+- Format: High Definition 4K Mobile Wallpaper, 9:16 aspect ratio.
+- Mood: High resolution, high contrast, visually striking.
+- Avoid text or people in the image unless requested.
 - Focus on textures, gradients, or scenic views.
 - Ensure it works well as a background (not too busy).
-
-Return ONLY the refined prompt text.
+- Output only the refined prompt in English.
 ''';
 
     final content = [Content.text(prompt)];

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/res/app_themes.dart';
 import '../../providers/board_providers.dart';
 import '../views/bulletin_board_view.dart';
@@ -11,6 +14,7 @@ import '../../../chat/providers/chat_providers.dart';
 import '../../../../features/auth/data/auth_repository.dart';
 import '../../../../core/models/postit.dart';
 import '../../providers/postit_providers.dart';
+import '../../providers/ai_providers.dart';
 import '../widgets/members_list_sheet.dart';
 import '../views/files_view.dart';
 
@@ -23,8 +27,40 @@ class GroupScreen extends ConsumerStatefulWidget {
   ConsumerState<GroupScreen> createState() => _GroupScreenState();
 }
 
-class _GroupScreenState extends ConsumerState<GroupScreen> {
+class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  bool _showSplash = true;
+  bool _splashGone = false;
+  late AnimationController _splashController;
+  late Animation<double> _bgScaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _splashController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _bgScaleAnimation = Tween<double>(begin: 1.2, end: 1.0).animate(
+      CurvedAnimation(parent: _splashController, curve: Curves.easeOutCubic),
+    );
+
+    _splashController.forward();
+
+    // Hide splash after 2 seconds
+    Timer(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        setState(() => _showSplash = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _splashController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +96,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: _buildGlassBottomBar(),
+                child: _buildGlassBottomBar(group),
               ),
 
               // 3. FAB (Only on Board)
@@ -81,6 +117,19 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                     },
                   ),
                 ),
+
+              // 4. Welcome Splash Layer
+              if (!_splashGone)
+                IgnorePointer(
+                  ignoring: !_showSplash,
+                  child: AnimatedOpacity(
+                    opacity: _showSplash ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeInOut,
+                    onEnd: () => setState(() => _splashGone = true),
+                    child: _buildSplashLayer(group),
+                  ),
+                ),
             ],
           ),
         );
@@ -90,7 +139,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
     );
   }
 
-  Widget _buildGlassBottomBar() {
+  Widget _buildGlassBottomBar(dynamic group) {
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -109,9 +158,9 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNavItem(0, Icons.grid_view_rounded, 'BOARD'),
-            _buildNavItem(1, Icons.chat_bubble_rounded, 'CHAT'),
-            _buildNavItem(2, Icons.folder_shared_rounded, 'FILES'),
+            _buildNavItem(0, Icons.grid_view_rounded, group.boardLabel ?? 'BOARD', group.fontFamily),
+            _buildNavItem(1, Icons.chat_bubble_rounded, group.chatLabel ?? 'CHAT', group.fontFamily),
+            _buildNavItem(2, Icons.folder_shared_rounded, group.filesLabel ?? 'FILES', group.fontFamily),
           ],
         ),
       ),
@@ -273,7 +322,8 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                                   textAlign: TextAlign.center,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
-                                  style: const TextStyle(
+                                  style: GoogleFonts.getFont(
+                                    group.fontFamily ?? 'Outfit',
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -366,7 +416,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, String? fontFamily) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
@@ -379,7 +429,8 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           ),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.getFont(
+              fontFamily ?? 'Outfit',
               fontSize: 10,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               color: isSelected ? Colors.white : Colors.white60,
@@ -387,6 +438,104 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSplashLayer(dynamic group) {
+    final hasBg = group.backgroundImage != null && group.backgroundImage!.isNotEmpty;
+    final gradient = AppThemes.getGradient(group.theme);
+
+    return Stack(
+      children: [
+        // Background with Zoom Effect
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: _bgScaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _bgScaleAnimation.value,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: !hasBg && gradient != null
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: gradient,
+                          )
+                        : null,
+                    image: hasBg
+                        ? DecorationImage(
+                            image: NetworkImage(group.backgroundImage!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                    color: !hasBg && gradient == null ? const Color(0xFF2F7D32) : null,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Glass Overlay
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+
+        // Welcome Content
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Welcome to',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  color: Colors.white70,
+                  letterSpacing: 4,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  group.name.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.getFont(
+                    group.fontFamily ?? 'Outfit',
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -1,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 30,
+                        color: Colors.black.withValues(alpha: 0.5),
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                width: 60,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

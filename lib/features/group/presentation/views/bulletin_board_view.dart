@@ -63,6 +63,7 @@ class BulletinBoardView extends ConsumerWidget {
 
                   return PostItWidget(
                     item: item,
+                    fontFamily: group?.fontFamily,
                     onDelete: canDelete
                         ? () {
                             ScaffoldMessenger.of(context).showSnackBar(
