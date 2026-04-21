@@ -29,11 +29,14 @@ class AuthController extends _$AuthController {
       final credential = await ref.read(authRepositoryProvider).signUp(email, password);
       final uid = credential.user!.uid;
 
-      // Create profile in database
+      // Also set displayName on Firebase user for fallback
+      await credential.user!.updateDisplayName(username);
+
+      // Create profile in database (now standardized to /profiles/ in repository)
       final profile = UserProfile(
         uid: uid,
         username: username,
-        fullName: username, // Default to username for now
+        fullName: username,
         email: email,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
         createdAt: DateTime.now().millisecondsSinceEpoch,

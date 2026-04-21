@@ -9,6 +9,7 @@ class BoardItem {
   final BoardItemType type;
   final String text;
   final String author;
+  final String senderId;
   final int ts;
   final Color backgroundColor;
   final Color textColor;
@@ -18,6 +19,7 @@ class BoardItem {
     required this.type,
     required this.text,
     required this.author,
+    required this.senderId,
     required this.ts,
     required this.backgroundColor,
     required this.textColor,
@@ -33,6 +35,7 @@ class BoardItem {
       type: BoardItemType.chat,
       text: display,
       author: m.senderName,
+      senderId: m.senderId,
       ts: m.ts,
       backgroundColor: const Color(0xFFAEE1FF), // Blue like MAUI mock
       textColor: Colors.black,
@@ -45,6 +48,7 @@ class BoardItem {
       type: BoardItemType.postit,
       text: p.text,
       author: 'member', // Could resolve later
+      senderId: p.senderId,
       ts: p.ts,
       backgroundColor: const Color(0xFFFFFB97), // Yellow Post-It color
       textColor: _parseColor(p.textColor),

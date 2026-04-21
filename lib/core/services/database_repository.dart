@@ -1,10 +1,12 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:rxdart/rxdart.dart';
 import '../models/group.dart';
 import '../models/chat_message.dart';
 import '../models/postit.dart';
 import '../models/user_profile.dart';
 import '../models/group_member.dart';
+import '../models/shared_file.dart';
 
 part 'database_repository.g.dart';
 
@@ -16,7 +18,7 @@ class DatabaseRepository {
   // --- Users ---
 
   Future<void> createUserProfile(UserProfile profile) async {
-    await _db.ref('users/${profile.uid}').set(profile.toJson());
+    await _db.ref('profiles/${profile.uid}').set(profile.toJson());
   }
 
   Future<UserProfile?> getUserProfile(String uid) async {
@@ -111,16 +113,82 @@ class DatabaseRepository {
     await _db.ref('postits/${postIt.groupId}/${postIt.id}').set(postIt.toJson());
   }
 
+  Future<void> deletePostIt(String groupId, String postItId) async {
+    print('[DELETE_DEBUG] Repository: Attempting to delete postits/$groupId/$postItId');
+    try {
+      await _db.ref('postits/$groupId/$postItId').remove();
+      print('[DELETE_DEBUG] Repository: Successfully removed.');
+    } catch (e) {
+      print('[DELETE_DEBUG] Repository ERROR: $e');
+      rethrow;
+    }
+  }
+
   String generatePostItId(String groupId) {
     return _db.ref('postits/$groupId').push().key!;
   }
 
+  // --- Shared Files ---
+
+  Stream<List<SharedFile>> streamSharedFiles(String groupId) {
+    return _db.ref('files/$groupId').onValue.map((event) {
+      final map = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (map == null) return [];
+
+      final items = <SharedFile>[];
+      map.forEach((key, value) {
+        items.add(SharedFile.fromJson(key.toString(), value as Map<dynamic, dynamic>));
+      });
+      
+      // Sort by timestamp descending
+      items.sort((a, b) => b.ts.compareTo(a.ts));
+      return items;
+    });
+  }
+
+  Future<void> saveSharedFileMetadata(SharedFile file) async {
+    await _db.ref('files/${file.groupId}/${file.id}').set(file.toJson());
+  }
+
+  String generateFileId(String groupId) {
+    return _db.ref('files/$groupId').push().key!;
+  }
+
   // --- Profiles ---
 
+  Stream<UserProfile?> streamProfile(String uid) {
+    return _db.ref('profiles/$uid').onValue.switchMap((event) {
+      final map = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (map != null) {
+        return Stream.value(UserProfile.fromJson(uid, map));
+      }
+      
+      // Fallback: Check legacy path if profiles node is empty
+      return _db.ref('users/$uid').onValue.map((legacyEvent) {
+        final legacyMap = legacyEvent.snapshot.value as Map<dynamic, dynamic>?;
+        if (legacyMap == null) return null;
+        return UserProfile.fromJson(uid, legacyMap);
+      });
+    });
+  }
+
   Future<UserProfile?> getProfile(String uid) async {
+    // 1. Check standardized /profiles/ node
     final snapshot = await _db.ref('profiles/$uid').get();
-    if (!snapshot.exists) return null;
-    return UserProfile.fromJson(uid, snapshot.value as Map<dynamic, dynamic>);
+    if (snapshot.exists) {
+      return UserProfile.fromJson(uid, snapshot.value as Map<dynamic, dynamic>);
+    }
+
+    // 2. Fallback to legacy /users/ node
+    final legacySnapshot = await _db.ref('users/$uid').get();
+    if (legacySnapshot.exists) {
+      final profile = UserProfile.fromJson(uid, legacySnapshot.value as Map<dynamic, dynamic>);
+      // Self-heal: Move to /profiles/ so next time is faster
+      await _db.ref('profiles/$uid').set(profile.toJson());
+      return profile;
+    }
+
+    return null;
   }
 
   Future<void> updateProfile(UserProfile profile, {String? oldUsername}) async {

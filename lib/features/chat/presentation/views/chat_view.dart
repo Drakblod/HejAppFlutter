@@ -28,6 +28,20 @@ class _ChatViewState extends ConsumerState<ChatView> {
     final messagesAsync = ref.watch(chatMessagesProvider(widget.groupId));
     final currentUid = ref.watch(authRepositoryProvider).currentUser?.uid;
 
+    // Listen for image upload errors
+    ref.listen(chatControllerProvider, (previous, next) {
+      next.whenOrNull(
+        error: (err, stack) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send: $err'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        },
+      );
+    });
+
     return Column(
       children: [
         // Messages List

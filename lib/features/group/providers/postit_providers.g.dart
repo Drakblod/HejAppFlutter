@@ -33,7 +33,7 @@ final class PostItControllerProvider
   PostItController create() => PostItController();
 }
 
-String _$postItControllerHash() => r'5b3c5bdeb5168c818f23644d7992a17d9d123950';
+String _$postItControllerHash() => r'65acecb4208890fc1a11fec938370d91afeffeee';
 
 abstract class _$PostItController extends $AsyncNotifier<void> {
   FutureOr<void> build();

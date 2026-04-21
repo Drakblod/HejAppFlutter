@@ -4,45 +4,75 @@ import '../../models/board_item.dart';
 
 class PostItWidget extends StatelessWidget {
   final BoardItem item;
+  final VoidCallback? onDelete;
 
-  const PostItWidget({super.key, required this.item});
+  const PostItWidget({super.key, required this.item, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: item.backgroundColor,
-        borderRadius: BorderRadius.circular(2), // Very slight rounding like a physical note
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            offset: const Offset(2, 2),
-            blurRadius: 4,
-          ),
-        ],
+    return GestureDetector(
+      onLongPress: onDelete != null
+          ? () => _showDeleteConfirmation(context)
+          : null,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: item.backgroundColor,
+          borderRadius: BorderRadius.circular(2), // Very slight rounding like a physical note
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              offset: const Offset(2, 2),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              item.text,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.kenia(
+                fontSize: 20,
+                color: item.textColor,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.author,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.black54,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            item.text,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.kenia(
-              fontSize: 20,
-              color: item.textColor,
-              height: 1.2,
-            ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Post-it?'),
+        content: const Text('Are you sure you want to remove this note from the board?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
           ),
-          const SizedBox(height: 8),
-          Text(
-            item.author,
-            textAlign: TextAlign.end,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.black54,
-              fontStyle: FontStyle.italic,
-            ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onDelete?.call();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('DELETE'),
           ),
         ],
       ),

@@ -12,6 +12,7 @@ import '../../../../features/auth/data/auth_repository.dart';
 import '../../../../core/models/postit.dart';
 import '../../providers/postit_providers.dart';
 import '../widgets/members_list_sheet.dart';
+import '../views/files_view.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -37,29 +38,24 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           backgroundColor: const Color(0xFFF5F5F5),
           body: Stack(
             children: [
-              // 1. Main Content (Bottom Layer)
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 140), // Space for header
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: [
-                      BulletinBoardView(groupId: widget.groupId),
-                      ChatView(groupId: widget.groupId),
-                    ],
+              // 1. Content Area (Header + Main Views)
+              Column(
+                children: [
+                  _buildHeader(group),
+                  Expanded(
+                    child: IndexedStack(
+                      index: _currentIndex,
+                      children: [
+                        BulletinBoardView(groupId: widget.groupId),
+                        ChatView(groupId: widget.groupId),
+                        FilesView(groupId: widget.groupId),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
 
-              // 2. Header (Top Layer)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: _buildHeader(group),
-              ),
-
-              // 3. Bottom Navigation (Fixed at bottom)
+              // 2. Bottom Navigation (Floating)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -67,10 +63,10 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                 child: _buildGlassBottomBar(),
               ),
 
-              // 4. FAB (Only on Board)
+              // 3. FAB (Only on Board)
               if (_currentIndex == 0)
                 Positioned(
-                  bottom: 90, // Above the green bar
+                  bottom: 90,
                   right: 16,
                   child: FloatingActionButton(
                     backgroundColor: const Color(0xFF2F7D32),
@@ -115,6 +111,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
           children: [
             _buildNavItem(0, Icons.grid_view_rounded, 'BOARD'),
             _buildNavItem(1, Icons.chat_bubble_rounded, 'CHAT'),
+            _buildNavItem(2, Icons.folder_shared_rounded, 'FILES'),
           ],
         ),
       ),
@@ -211,8 +208,8 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
     final hasBg = group.backgroundImage != null && group.backgroundImage!.isNotEmpty;
 
     return Container(
-      height: 140,
       width: double.infinity,
+      padding: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         gradient: !hasBg && gradient != null
             ? LinearGradient(

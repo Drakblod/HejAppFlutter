@@ -10,7 +10,9 @@ part 'postit_providers.g.dart';
 @riverpod
 class PostItController extends _$PostItController {
   @override
-  FutureOr<void> build() {}
+  FutureOr<void> build() {
+    ref.keepAlive();
+  }
 
   Future<void> savePostIt({
     required String groupId,
@@ -43,6 +45,14 @@ class PostItController extends _$PostItController {
       for (final p in postIts) {
         await db.savePostIt(p);
       }
+    });
+  }
+
+  Future<void> deletePostIt(String groupId, String postItId) async {
+    print('[DELETE_DEBUG] Controller: deletePostIt(groupId: $groupId, id: $postItId)');
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(databaseRepositoryProvider).deletePostIt(groupId, postItId);
     });
   }
 }

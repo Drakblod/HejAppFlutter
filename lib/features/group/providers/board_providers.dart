@@ -50,9 +50,7 @@ Stream<List<({GroupMember member, UserProfile? profile})>> groupMembers(Ref ref,
     // However, let's try a reactive approach using CombineLatest.
     
     final profileStreams = members.map((m) {
-      // We don't have a streamProfile yet, but we can use getProfile in a Stream.fromFuture
-      // or implement streamProfile in DatabaseRepository.
-      return Stream.fromFuture(db.getProfile(m.uid)).map((p) => (member: m, profile: p));
+      return db.streamProfile(m.uid).map((p) => (member: m, profile: p));
     });
     
     return CombineLatestStream.list(profileStreams);

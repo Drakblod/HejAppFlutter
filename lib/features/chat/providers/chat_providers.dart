@@ -16,7 +16,7 @@ Stream<List<ChatMessage>> chatMessages(Ref ref, String groupId) {
 class ChatController extends _$ChatController {
   @override
   FutureOr<void> build() {
-    // Idle state
+    ref.keepAlive();
   }
 
   ChatMessage? _replyTo;
@@ -65,17 +65,19 @@ class ChatController extends _$ChatController {
   }) async {
     state = const AsyncValue.loading();
     
+    final storage = ref.read(storageRepositoryProvider);
+    final downloadUrl = await storage.uploadChatPhoto(
+      groupId: groupId,
+      file: file,
+    );
+
+    if (!ref.mounted) return;
+
     state = await AsyncValue.guard(() async {
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user == null) return;
 
-      // 1. Upload to Storage
-      final downloadUrl = await ref.read(storageRepositoryProvider).uploadChatPhoto(
-        groupId: groupId,
-        file: file,
-      );
-
-      // 2. Send Message Metadata
+      // 1. Send Message Metadata
       final message = ChatMessage(
         id: '',
         groupId: groupId,

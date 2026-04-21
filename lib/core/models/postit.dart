@@ -19,7 +19,7 @@ class PostIt {
     return PostIt(
       id: id,
       groupId: json['groupId'] ?? '',
-      senderId: json['senderId'] ?? '',
+      senderId: json['senderId'] ?? json['userId'] ?? json['creatorId'] ?? '',
       text: json['text'] ?? '',
       textColor: json['textColor'] ?? 'Black',
       ts: json['ts'] ?? 0,
