@@ -39,7 +39,7 @@ class HejAppFirebaseConfig {
       case TargetPlatform.iOS:
         return const FirebaseOptions(
           apiKey: apiKey,
-          appId: '1:278299747848:ios:some_ios_id', // Ideally extracted from plist later
+          appId: '1:278299747848:ios:5ec0df17cdf82de6ad93bd', // Updated with correct ID
           messagingSenderId: messagingSenderId,
           projectId: projectId,
           databaseURL: databaseUrl,
