@@ -8,38 +8,45 @@ import 'core/services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase using the manual options from our config
-  // Initialize Firebase with error handling to prevent startup crashes
   try {
-    await Firebase.initializeApp(
-      options: HejAppFirebaseConfig.currentPlatform,
-    );
+    Firebase.app(); // Check if already initialized
+    debugPrint('Firebase already initialized');
   } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
-  }
-
-  final container = ProviderContainer();
-  
-  // Initialize Notification Service
-  try {
-    await container.read(notificationServiceProvider.notifier).initialize();
-  } catch (e) {
-    debugPrint('Failed to initialize notifications: $e');
+    try {
+      await Firebase.initializeApp(
+        options: HejAppFirebaseConfig.currentPlatform,
+      );
+    } catch (e) {
+      debugPrint('Firebase initialization failed: $e');
+    }
   }
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const HejApp(),
+    const ProviderScope(
+      child: HejApp(),
     ),
   );
 }
 
-class HejApp extends ConsumerWidget {
+class HejApp extends ConsumerStatefulWidget {
   const HejApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HejApp> createState() => _HejAppState();
+}
+
+class _HejAppState extends ConsumerState<HejApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize Notification Service
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationServiceProvider.notifier).initialize();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(

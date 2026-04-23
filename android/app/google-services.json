@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "278299747848",
+    "project_id": "hejapp-a6614",
+    "storage_bucket": "hejapp-a6614.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:278299747848:android:eec00e7e588903b3ad93bd",
+        "android_client_info": {
+          "package_name": "com.companyname.hejapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdI1i8toUh_5BedSz5ISf_L5930tdg6Z8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

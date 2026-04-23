@@ -56,6 +56,12 @@ exports.onMessageCreated = functions.database
         messageId: context.params.messageId || '',
         senderId,
       },
+      android: {
+        notification: {
+          channelId: 'high_importance_channel',
+          priority: 'high',
+        },
+      },
     };
 
     try {

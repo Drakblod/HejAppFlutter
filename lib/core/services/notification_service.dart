@@ -1,15 +1,24 @@
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'database_repository.dart';
 import '../../features/auth/data/auth_repository.dart';
 
 part 'notification_service.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class NotificationService extends _$NotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+
+  static const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'high_importance_channel',
+    'High Importance Notifications',
+    description: 'This channel is used for important notifications.',
+    importance: Importance.max,
+  );
 
   @override
   void build() {
@@ -23,12 +32,33 @@ class NotificationService extends _$NotificationService {
   }
 
   Future<void> initialize() async {
+    // 0. Initialize local notifications for Android channel
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: DarwinInitializationSettings(),
+    );
+    await _localNotifications.initialize(initializationSettings);
+
+    final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(channel);
+    }
+
     // 1. Request Permission
     NotificationSettings settings = await _fcm.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
+
+    // 2. Register device if already logged in
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      registerDevice(user.uid);
+    }
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       debugPrint('User granted notification permission');
