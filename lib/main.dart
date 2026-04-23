@@ -8,9 +8,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase using the manual options from our config
-  await Firebase.initializeApp(
-    options: HejAppFirebaseConfig.currentPlatform,
-  );
+  // Initialize Firebase with error handling to prevent startup crashes
+  try {
+    await Firebase.initializeApp(
+      options: HejAppFirebaseConfig.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
 
   runApp(
     const ProviderScope(
