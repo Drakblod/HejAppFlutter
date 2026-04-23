@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/firebase_config.dart';
 import 'core/navigation/app_router.dart';
+import 'core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,9 +13,19 @@ void main() async {
     options: HejAppFirebaseConfig.currentPlatform,
   );
 
+  final container = ProviderContainer();
+  
+  // Initialize Notification Service
+  try {
+    await container.read(notificationServiceProvider.notifier).initialize();
+  } catch (e) {
+    debugPrint('Failed to initialize notifications: $e');
+  }
+
   runApp(
-    const ProviderScope(
-      child: HejApp(),
+    UncontrolledProviderScope(
+      container: container,
+      child: const HejApp(),
     ),
   );
 }

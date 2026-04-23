@@ -352,6 +352,14 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                       ],
                     ),
                     const SizedBox(height: 32),
+                    
+                    // Module Visibility
+                    _buildSectionTitle('MANAGE MODULES'),
+                    _buildModuleToggle('Bulletin Board', 'board', group.enabledModules['board'] ?? true),
+                    _buildModuleToggle('Real-time Chat', 'chat', group.enabledModules['chat'] ?? true),
+                    _buildModuleToggle('Shared Files', 'files', group.enabledModules['files'] ?? true),
+                    _buildModuleToggle('Gathering Planner', 'calendar', group.enabledModules['calendar'] ?? true),
+                    const SizedBox(height: 32),
 
                     // Custom Identity Section
                     _buildSectionTitle('CUSTOM IDENTITY'),
@@ -496,6 +504,30 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildModuleToggle(String label, String moduleId, bool value) {
+    return SwitchListTile(
+      title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 16)),
+      value: value,
+      activeTrackColor: Colors.blue.withValues(alpha: 0.5),
+      activeColor: Colors.blue, // This is actually for the thumb
+      onChanged: (bool newValue) async {
+        setState(() => _isLoading = true);
+        try {
+          final currentModules = Map<String, bool>.from(
+            (await ref.read(databaseRepositoryProvider).getGroupMeta(widget.groupId))?.enabledModules ?? {}
+          );
+          currentModules[moduleId] = newValue;
+          await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
+            'enabledModules': currentModules,
+          });
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      },
+      contentPadding: EdgeInsets.zero,
     );
   }
 }

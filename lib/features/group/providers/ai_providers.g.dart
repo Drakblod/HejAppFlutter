@@ -33,7 +33,7 @@ final class GeminiControllerProvider
   GeminiController create() => GeminiController();
 }
 
-String _$geminiControllerHash() => r'5a90b5ea1f117d945b3c89764b6a52b6b56495ac';
+String _$geminiControllerHash() => r'dfb53a2179f81ae5f70471f4f61cbbb395ebcf37';
 
 abstract class _$GeminiController extends $AsyncNotifier<List<PostIt>> {
   FutureOr<List<PostIt>> build();

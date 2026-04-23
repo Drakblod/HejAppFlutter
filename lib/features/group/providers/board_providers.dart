@@ -9,8 +9,8 @@ import '../models/board_item.dart';
 part 'board_providers.g.dart';
 
 @riverpod
-Future<Group?> groupMeta(Ref ref, String groupId) {
-  return ref.watch(databaseRepositoryProvider).getGroupMeta(groupId);
+Stream<Group?> groupMeta(Ref ref, String groupId) {
+  return ref.watch(databaseRepositoryProvider).streamGroupMeta(groupId);
 }
 
 @riverpod

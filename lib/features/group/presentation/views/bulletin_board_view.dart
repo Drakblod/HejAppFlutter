@@ -47,33 +47,40 @@ class BulletinBoardView extends ConsumerWidget {
 
             final isOwner = group?.ownerId == currentUser?.uid;
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-              child: MasonryGridView.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final isAuthor = item.senderId == currentUser?.uid;
-                  
-                  // ONLY allow deleting yellow post-its, not chat messages from the board
-                  final canDelete = item.type == BoardItemType.postit && (isOwner || isAuthor);
-
-                  return PostItWidget(
-                    item: item,
-                    fontFamily: group?.fontFamily,
-                    onDelete: canDelete
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Deleting post-it...'), duration: Duration(seconds: 1)),
-                            );
-                            ref.read(postItControllerProvider.notifier).deletePostIt(groupId, item.id);
-                          }
-                        : null,
-                  );
-                },
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(boardItemsProvider(groupId));
+                ref.invalidate(groupMetaProvider(groupId));
+                await Future.delayed(const Duration(milliseconds: 500));
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+                child: MasonryGridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final isAuthor = item.senderId == currentUser?.uid;
+                    
+                    // ONLY allow deleting yellow post-its, not chat messages from the board
+                    final canDelete = item.type == BoardItemType.postit && (isOwner || isAuthor);
+  
+                    return PostItWidget(
+                      item: item,
+                      fontFamily: group?.fontFamily,
+                      onDelete: canDelete
+                          ? () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Deleting post-it...'), duration: Duration(seconds: 1)),
+                              );
+                              ref.read(postItControllerProvider.notifier).deletePostIt(groupId, item.id);
+                            }
+                          : null,
+                    );
+                  },
+                ),
               ),
             );
           },

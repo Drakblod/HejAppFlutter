@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/files_providers.dart';
+import '../../providers/board_providers.dart';
 import '../../../../core/models/shared_file.dart';
 
 class FilesView extends ConsumerWidget {
@@ -36,15 +37,22 @@ class FilesView extends ConsumerWidget {
             return _buildEmptyState(context, ref);
           }
 
-          return Stack(
-            children: [
-              ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                itemCount: files.length,
-                itemBuilder: (context, index) {
-                  return _buildFileCard(context, files[index]);
-                },
-              ),
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(sharedFilesProvider(groupId));
+              ref.invalidate(groupMetaProvider(groupId));
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: Stack(
+              children: [
+                ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                  itemCount: files.length,
+                  itemBuilder: (context, index) {
+                    return _buildFileCard(context, files[index]);
+                  },
+                ),
               Positioned(
                 bottom: 140,
                 right: 16,
@@ -56,7 +64,8 @@ class FilesView extends ConsumerWidget {
                 ),
               ),
             ],
-          );
+          ),
+        );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) {

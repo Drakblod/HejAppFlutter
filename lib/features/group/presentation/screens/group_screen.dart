@@ -17,6 +17,8 @@ import '../../providers/postit_providers.dart';
 import '../../providers/ai_providers.dart';
 import '../widgets/members_list_sheet.dart';
 import '../views/files_view.dart';
+import '../views/calendar_view.dart';
+import '../../providers/meeting_providers.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -70,7 +72,44 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
       data: (group) {
         if (group == null) return const Scaffold(body: Center(child: Text('Group not found')));
 
+        // Define all possible modules
+        final List<Map<String, dynamic>> allModules = [
+          {
+            'id': 'board',
+            'icon': Icons.grid_view_rounded,
+            'label': group.boardLabel ?? 'BOARD',
+            'view': BulletinBoardView(groupId: widget.groupId),
+          },
+          {
+            'id': 'chat',
+            'icon': Icons.chat_bubble_rounded,
+            'label': group.chatLabel ?? 'CHAT',
+            'view': ChatView(groupId: widget.groupId),
+          },
+          {
+            'id': 'files',
+            'icon': Icons.folder_shared_rounded,
+            'label': group.filesLabel ?? 'FILES',
+            'view': FilesView(groupId: widget.groupId),
+          },
+          {
+            'id': 'calendar',
+            'icon': Icons.calendar_today_rounded,
+            'label': 'CALENDAR',
+            'view': CalendarView(groupId: widget.groupId),
+          },
+        ];
+
+        // Filter based on group settings
+        final activeModules = allModules.where((m) => group.enabledModules[m['id']] ?? true).toList();
+
+        // Ensure current index is valid
+        if (_currentIndex >= activeModules.length) {
+          _currentIndex = 0;
+        }
+
         return Scaffold(
+          extendBody: true,
           backgroundColor: const Color(0xFFF5F5F5),
           body: Stack(
             children: [
@@ -81,11 +120,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                   Expanded(
                     child: IndexedStack(
                       index: _currentIndex,
-                      children: [
-                        BulletinBoardView(groupId: widget.groupId),
-                        ChatView(groupId: widget.groupId),
-                        FilesView(groupId: widget.groupId),
-                      ],
+                      children: activeModules.map<Widget>((m) => m['view'] as Widget).toList(),
                     ),
                   ),
                 ],
@@ -96,26 +131,15 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: _buildGlassBottomBar(group),
+                child: _buildBottomNav(group, activeModules),
               ),
 
               // 3. FAB (Only on Board)
-              if (_currentIndex == 0)
+              if (activeModules[_currentIndex]['id'] == 'board')
                 Positioned(
                   bottom: 90,
                   right: 16,
-                  child: FloatingActionButton(
-                    backgroundColor: const Color(0xFF2F7D32),
-                    child: const Icon(Icons.add, color: Colors.white),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => CreatePostItSheet(groupId: widget.groupId),
-                      );
-                    },
-                  ),
+                  child: _buildFAB(group),
                 ),
 
               // 4. Welcome Splash Layer
@@ -135,18 +159,22 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
         );
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
+      error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
     );
   }
 
-  Widget _buildGlassBottomBar(dynamic group) {
+  Widget _buildBottomNav(group, List<Map<String, dynamic>> activeModules) {
+    final activeProposalsCount = ref.watch(activeProposalsProvider(widget.groupId)).value?.length ?? 0;
+
     return SafeArea(
+      bottom: true,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-        height: 64,
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced constant margin since SafeArea adds the rest
+        height: 70,
         decoration: BoxDecoration(
-          color: const Color(0xFF2E7D32).withValues(alpha: 0.95), // Slightly more solid for better readability
-          borderRadius: BorderRadius.circular(32),
+          color: const Color(0xFF1A1A1A).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(35),
+          border: Border.all(color: Colors.white10),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.2),
@@ -157,13 +185,35 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(0, Icons.grid_view_rounded, group.boardLabel ?? 'BOARD', group.fontFamily),
-            _buildNavItem(1, Icons.chat_bubble_rounded, group.chatLabel ?? 'CHAT', group.fontFamily),
-            _buildNavItem(2, Icons.folder_shared_rounded, group.filesLabel ?? 'FILES', group.fontFamily),
-          ],
+          children: activeModules.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final m = entry.value;
+            final isCalendar = m['id'] == 'calendar';
+            return _buildNavItem(
+              idx, 
+              m['icon'] as IconData, 
+              m['label'] as String, 
+              group.fontFamily,
+              badgeCount: isCalendar ? activeProposalsCount : 0,
+            );
+          }).toList(),
         ),
       ),
+    );
+  }
+
+  Widget _buildFAB(dynamic group) {
+    return FloatingActionButton(
+      backgroundColor: const Color(0xFF2F7D32),
+      child: const Icon(Icons.add, color: Colors.white),
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => CreatePostItSheet(groupId: widget.groupId),
+        );
+      },
     );
   }
 
@@ -255,12 +305,15 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
   Widget _buildHeader(group) {
     final gradient = AppThemes.getGradient(group.theme);
     final hasBg = group.backgroundImage != null && group.backgroundImage!.isNotEmpty;
+    final activeProposals = ref.watch(activeProposalsProvider(widget.groupId)).value ?? [];
+    final hasNew = activeProposals.isNotEmpty;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(bottom: 16),
+      constraints: const BoxConstraints(minHeight: 140),
+      padding: const EdgeInsets.only(bottom: 16), // Added some bottom padding to clear the nav better
       decoration: BoxDecoration(
-        gradient: !hasBg && gradient != null
+        gradient: gradient != null
             ? LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -295,11 +348,16 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Hero(
-                          tag: 'group_icon_${group.id}',
-                          child: Text(
-                            group.icon,
-                            style: const TextStyle(fontSize: 24),
+                        Badge(
+                          isLabelVisible: hasNew,
+                          label: Text('${activeProposals.length}'),
+                          backgroundColor: Colors.redAccent,
+                          child: Hero(
+                            tag: 'group_icon_${group.id}',
+                            child: Text(
+                              group.icon,
+                              style: const TextStyle(fontSize: 24),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -416,16 +474,21 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, String? fontFamily) {
+  Widget _buildNavItem(int index, IconData icon, String label, String? fontFamily, {int badgeCount = 0}) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.white60,
+          Badge(
+            isLabelVisible: badgeCount > 0,
+            label: Text('$badgeCount'),
+            backgroundColor: Colors.redAccent,
+            child: Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.white60,
+            ),
           ),
           Text(
             label,

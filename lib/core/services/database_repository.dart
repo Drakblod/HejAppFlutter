@@ -43,6 +43,14 @@ class DatabaseRepository {
     return Group.fromJson(groupId, snapshot.value as Map<dynamic, dynamic>);
   }
 
+  Stream<Group?> streamGroupMeta(String groupId) {
+    return _db.ref('groups/$groupId').onValue.map((event) {
+      final value = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (value == null) return null;
+      return Group.fromJson(groupId, value);
+    });
+  }
+
   Future<void> createGroup({
     required String name,
     required String ownerId,
@@ -58,6 +66,12 @@ class DatabaseRepository {
       'icon': icon,
       'ownerId': ownerId,
       'createdAt': now,
+      'enabledModules': {
+        'board': true,
+        'chat': true,
+        'files': true,
+        'calendar': true,
+      },
     };
 
     await _db.ref('groups/$groupId').set(groupData);
@@ -277,6 +291,15 @@ class DatabaseRepository {
     if (groupId.isEmpty) return false;
     final snapshot = await _db.ref('groups/$groupId').get();
     return snapshot.exists;
+  }
+
+  Future<void> saveDeviceToken(String userId, String token) async {
+    // We use a hash of the token as the key to avoid issues with special characters in RTD keys
+    final tokenKey = token.hashCode.toString();
+    await _db.ref('deviceTokens/$userId/$tokenKey').set({
+      'token': token,
+      'updatedAt': ServerValue.timestamp,
+    });
   }
 }
 

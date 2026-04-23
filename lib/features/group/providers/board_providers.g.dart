@@ -13,8 +13,8 @@ part of 'board_providers.dart';
 const groupMetaProvider = GroupMetaFamily._();
 
 final class GroupMetaProvider
-    extends $FunctionalProvider<AsyncValue<Group?>, Group?, FutureOr<Group?>>
-    with $FutureModifier<Group?>, $FutureProvider<Group?> {
+    extends $FunctionalProvider<AsyncValue<Group?>, Group?, Stream<Group?>>
+    with $FutureModifier<Group?>, $StreamProvider<Group?> {
   const GroupMetaProvider._({
     required GroupMetaFamily super.from,
     required String super.argument,
@@ -38,11 +38,11 @@ final class GroupMetaProvider
 
   @$internal
   @override
-  $FutureProviderElement<Group?> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  $StreamProviderElement<Group?> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
 
   @override
-  FutureOr<Group?> create(Ref ref) {
+  Stream<Group?> create(Ref ref) {
     final argument = this.argument as String;
     return groupMeta(ref, argument);
   }
@@ -58,10 +58,10 @@ final class GroupMetaProvider
   }
 }
 
-String _$groupMetaHash() => r'60835dd488ec6cb69dd2987cbd07219a185f0aa8';
+String _$groupMetaHash() => r'c529cf5e3015ec98738cadc803c27b0eb88ebc7d';
 
 final class GroupMetaFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<Group?>, String> {
+    with $FunctionalFamilyOverride<Stream<Group?>, String> {
   const GroupMetaFamily._()
     : super(
         retry: null,

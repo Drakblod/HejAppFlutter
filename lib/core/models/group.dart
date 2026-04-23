@@ -9,6 +9,7 @@ class Group {
   final String? chatLabel;
   final String? filesLabel;
   final String? fontFamily;
+  final Map<String, bool> enabledModules;
   final int createdAt;
 
   Group({
@@ -22,10 +23,20 @@ class Group {
     this.chatLabel,
     this.filesLabel,
     this.fontFamily,
+    required this.enabledModules,
     required this.createdAt,
   });
 
   factory Group.fromJson(String id, Map<dynamic, dynamic> json) {
+    // Default modules if not present
+    final rawModules = json['enabledModules'] as Map<dynamic, dynamic>?;
+    final enabledModules = <String, bool>{
+      'board': rawModules?['board'] ?? true,
+      'chat': rawModules?['chat'] ?? true,
+      'files': rawModules?['files'] ?? true,
+      'calendar': rawModules?['calendar'] ?? true,
+    };
+
     return Group(
       id: id,
       name: json['name'] ?? '',
@@ -37,6 +48,7 @@ class Group {
       chatLabel: json['chatLabel'],
       filesLabel: json['filesLabel'],
       fontFamily: json['fontFamily'],
+      enabledModules: enabledModules,
       createdAt: json['createdAt'] ?? 0,
     );
   }
@@ -52,6 +64,7 @@ class Group {
       'chatLabel': chatLabel,
       'filesLabel': filesLabel,
       'fontFamily': fontFamily,
+      'enabledModules': enabledModules,
       'createdAt': createdAt,
     };
   }
