@@ -35,12 +35,16 @@ class CalendarView extends ConsumerWidget {
             _SectionHeader(
               title: 'CONFIRMED GATHERINGS',
               icon: Icons.check_circle_outline,
+              baseColor: groupAsync.value?.baseColor ?? '0xFF2F7D32',
               onAdd: () {
                 final isOwner = groupAsync.value?.ownerId == currentUser?.uid;
                 if (isOwner) {
                   showDialog(
                     context: context,
-                    builder: (context) => CreateProposalDialog(groupId: groupId),
+                    builder: (context) => CreateProposalDialog(
+                      groupId: groupId,
+                      baseColor: groupAsync.value?.baseColor ?? '0xFF2F7D32',
+                    ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -54,7 +58,10 @@ class CalendarView extends ConsumerWidget {
               data: (meetings) => meetings.isEmpty
                   ? const _EmptyState(text: 'No confirmed gatherings yet')
                   : Column(
-                      children: meetings.map((m) => _ConfirmedMeetingCard(meeting: m)).toList(),
+                      children: meetings.map((m) => _ConfirmedMeetingCard(
+                        meeting: m,
+                        baseColor: groupAsync.value?.baseColor ?? '0xFF2F7D32',
+                      )).toList(),
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('Error: $e'),
@@ -63,9 +70,10 @@ class CalendarView extends ConsumerWidget {
             const SizedBox(height: 32),
   
             // Header for Proposals
-            const _SectionHeader(
+            _SectionHeader(
               title: 'ACTIVE PROPOSALS',
-              icon: Icons.lightbulb_outline,
+              icon: Icons.how_to_vote_outlined,
+              baseColor: groupAsync.value?.baseColor ?? '0xFF2F7D32',
             ),
             const SizedBox(height: 12),
             activeAsync.when(
@@ -76,6 +84,8 @@ class CalendarView extends ConsumerWidget {
                         proposal: p,
                         isOwner: groupAsync.value?.ownerId == currentUser?.uid,
                         currentUserId: currentUser?.uid ?? '',
+                        groupId: groupId,
+                        baseColor: groupAsync.value?.baseColor ?? '0xFF2F7D32',
                       )).toList(),
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -92,8 +102,14 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
   final VoidCallback? onAdd;
+  final String baseColor;
 
-  const _SectionHeader({required this.title, required this.icon, this.onAdd});
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    this.onAdd,
+    required this.baseColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +133,7 @@ class _SectionHeader extends StatelessWidget {
         ),
         if (onAdd != null)
           IconButton(
-            icon: const Icon(Icons.add_circle, color: Color(0xFF2F7D32)),
+            icon: Icon(Icons.add_circle, color: Color(int.parse(baseColor))),
             onPressed: onAdd,
           ),
       ],
@@ -147,7 +163,8 @@ class _EmptyState extends StatelessWidget {
 
 class _ConfirmedMeetingCard extends StatelessWidget {
   final dynamic meeting;
-  const _ConfirmedMeetingCard({required this.meeting});
+  final String baseColor;
+  const _ConfirmedMeetingCard({required this.meeting, required this.baseColor});
 
   @override
   Widget build(BuildContext context) {
@@ -156,15 +173,15 @@ class _ConfirmedMeetingCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2F7D32), Color(0xFF1B5E20)],
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [Color(int.parse(baseColor)), Color(int.parse(baseColor)).withValues(alpha: 0.8)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2F7D32).withValues(alpha: 0.3),
+            color: Color(int.parse(baseColor)).withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -217,11 +234,15 @@ class _ProposalCard extends ConsumerWidget {
   final dynamic proposal;
   final bool isOwner;
   final String currentUserId;
+  final String groupId;
+  final String baseColor;
 
   const _ProposalCard({
     required this.proposal,
     required this.isOwner,
     required this.currentUserId,
+    required this.groupId,
+    required this.baseColor,
   });
 
   @override
@@ -293,17 +314,17 @@ class _ProposalCard extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: hasVoted ? const Color(0xFFE8F5E9) : Colors.grey[50],
+                    color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.3) : Colors.grey[50],
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: hasVoted ? const Color(0xFF2F7D32).withValues(alpha: 0.3) : Colors.transparent,
+                      color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.3) : Colors.transparent,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         hasVoted ? Icons.check_circle : Icons.circle_outlined,
-                        color: hasVoted ? const Color(0xFF2F7D32) : Colors.black12,
+                        color: hasVoted ? Color(int.parse(baseColor)) : Colors.black12,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -311,7 +332,7 @@ class _ProposalCard extends ConsumerWidget {
                         child: Text(
                           DateFormat('EEE, MMM d • HH:mm').format(date),
                           style: TextStyle(
-                            color: hasVoted ? const Color(0xFF1B5E20) : Colors.black87,
+                            color: hasVoted ? Color(int.parse(baseColor)) : Colors.black87,
                             fontWeight: hasVoted ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
@@ -332,7 +353,7 @@ class _ProposalCard extends ConsumerWidget {
                           padding: const EdgeInsets.only(left: 8.0),
                           child: InkWell(
                             onTap: () => _confirmMeeting(context, ref, proposal, date),
-                            child: const Icon(Icons.stars, color: Colors.amber, size: 24),
+                            child: Icon(Icons.stars, color: Color(int.parse(baseColor)), size: 24),
                           ),
                         ),
                     ],
@@ -356,7 +377,7 @@ class _ProposalCard extends ConsumerWidget {
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2F7D32), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Color(int.parse(baseColor)), foregroundColor: Colors.white),
             child: const Text('CONFIRM DATE'),
           ),
         ],

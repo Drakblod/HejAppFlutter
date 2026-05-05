@@ -25,7 +25,9 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
   late TextEditingController _boardLabelController;
   late TextEditingController _chatLabelController;
   late TextEditingController _filesLabelController;
+  late TextEditingController _ocrLabelController;
   String? _selectedFont;
+  String? _selectedBaseColor;
 
   @override
   void initState() {
@@ -34,6 +36,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     _boardLabelController = TextEditingController();
     _chatLabelController = TextEditingController();
     _filesLabelController = TextEditingController();
+    _ocrLabelController = TextEditingController();
     
     // Initialize with current meta
     Future.microtask(() async {
@@ -44,7 +47,9 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
           _boardLabelController.text = meta.boardLabel ?? 'BOARD';
           _chatLabelController.text = meta.chatLabel ?? 'CHAT';
           _filesLabelController.text = meta.filesLabel ?? 'FILES';
+          _ocrLabelController.text = meta.ocrLabel ?? 'OCR';
           _selectedFont = meta.fontFamily;
+          _selectedBaseColor = meta.baseColor;
         });
       }
     });
@@ -56,6 +61,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     _boardLabelController.dispose();
     _chatLabelController.dispose();
     _filesLabelController.dispose();
+    _ocrLabelController.dispose();
     super.dispose();
   }
 
@@ -66,7 +72,9 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
         'boardLabel': _boardLabelController.text.trim(),
         'chatLabel': _chatLabelController.text.trim(),
         'filesLabel': _filesLabelController.text.trim(),
+        'ocrLabel': _ocrLabelController.text.trim(),
         'fontFamily': _selectedFont,
+        'baseColor': _selectedBaseColor ?? '0xFF2F7D32',
       });
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Identity updated!')));
     } finally {
@@ -359,6 +367,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     _buildModuleToggle('Real-time Chat', 'chat', group.enabledModules['chat'] ?? true),
                     _buildModuleToggle('Shared Files', 'files', group.enabledModules['files'] ?? true),
                     _buildModuleToggle('Gathering Planner', 'calendar', group.enabledModules['calendar'] ?? true),
+                    _buildModuleToggle('OCR-delare', 'ocr', group.enabledModules['ocr'] ?? false),
                     const SizedBox(height: 32),
 
                     // Custom Identity Section
@@ -368,6 +377,8 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     _buildIdentityField('Chat Tab Name', _chatLabelController),
                     const SizedBox(height: 16),
                     _buildIdentityField('Files Tab Name', _filesLabelController),
+                    const SizedBox(height: 16),
+                    _buildIdentityField('OCR Tab Name', _ocrLabelController),
                     const SizedBox(height: 24),
                     const Text('Typography Style:', style: TextStyle(color: Colors.white70, fontSize: 13)),
                     const SizedBox(height: 12),
@@ -378,6 +389,22 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                         _buildFontButton('Playful', 'Kenia'),
                         const SizedBox(width: 8),
                         _buildFontButton('Classic', 'Lora'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('Base Color:', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildColorSwatch('0xFF2F7D32'), // Hej Green
+                        const SizedBox(width: 8),
+                        _buildColorSwatch('0xFF0288D1'), // Ocean Blue
+                        const SizedBox(width: 8),
+                        _buildColorSwatch('0xFFE64A19'), // Sunset Orange
+                        const SizedBox(width: 8),
+                        _buildColorSwatch('0xFF512DA8'), // Royal Purple
+                        const SizedBox(width: 8),
+                        _buildColorSwatch('0xFF455A64'), // Slate Grey
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -503,6 +530,28 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildColorSwatch(String hexColor) {
+    final isSelected = (_selectedBaseColor ?? '0xFF2F7D32') == hexColor;
+    final color = Color(int.parse(hexColor));
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedBaseColor = hexColor),
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
+          boxShadow: isSelected
+              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 2)]
+              : null,
+        ),
+        child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
       ),
     );
   }

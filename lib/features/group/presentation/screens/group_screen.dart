@@ -18,6 +18,7 @@ import '../../providers/ai_providers.dart';
 import '../widgets/members_list_sheet.dart';
 import '../views/files_view.dart';
 import '../views/calendar_view.dart';
+import '../views/ocr_view.dart';
 import '../../providers/meeting_providers.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
@@ -98,6 +99,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
             'label': 'CALENDAR',
             'view': CalendarView(groupId: widget.groupId),
           },
+          {
+            'id': 'ocr',
+            'icon': Icons.numbers_rounded,
+            'label': group.ocrLabel?.toUpperCase() ?? 'OCR',
+            'view': OcrView(groupId: widget.groupId),
+          },
         ];
 
         // Filter based on group settings
@@ -137,7 +144,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
               // 3. FAB (Only on Board)
               if (activeModules[_currentIndex]['id'] == 'board')
                 Positioned(
-                  bottom: 90,
+                  bottom: 100 + MediaQuery.of(context).padding.bottom,
                   right: 16,
                   child: _buildFAB(group),
                 ),
@@ -204,20 +211,24 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
 
   Widget _buildFAB(dynamic group) {
     return FloatingActionButton(
-      backgroundColor: const Color(0xFF2F7D32),
+      backgroundColor: Color(int.parse(group.baseColor)),
       child: const Icon(Icons.add, color: Colors.white),
       onPressed: () {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => CreatePostItSheet(groupId: widget.groupId),
+          builder: (context) => CreatePostItSheet(
+            groupId: widget.groupId,
+            baseColor: group.baseColor,
+          ),
         );
       },
     );
   }
 
-  Future<void> _extractAI(String groupId) async {
+  Future<void> _extractAI(dynamic group) async {
+    final String groupId = group.id;
     // 1. Fetch recent messages
     final messages = await ref.read(chatMessagesProvider(groupId).future);
     if (messages.isEmpty) {
@@ -247,7 +258,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
           if (list.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No new events or takeaways found.')));
           } else {
-            _showSuggestionsDialog(list);
+            _showSuggestionsDialog(list, group);
           }
         });
       }
@@ -259,7 +270,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
     }
   }
 
-  void _showSuggestionsDialog(List<PostIt> suggestions) {
+  void _showSuggestionsDialog(List<PostIt> suggestions, dynamic group) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -294,7 +305,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                 setState(() => _currentIndex = 0); // Switch to board
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2F7D32), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Color(int.parse(group.baseColor)), foregroundColor: Colors.white),
             child: const Text('PIN ALL TO BOARD'),
           ),
         ],
@@ -326,7 +337,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                 fit: BoxFit.cover,
               )
             : null,
-        color: !hasBg && gradient == null ? const Color(0xFF2F7D32) : null,
+        color: !hasBg && gradient == null ? Color(int.parse(group.baseColor)) : null,
       ),
       child: Stack(
         children: [
@@ -455,7 +466,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                         if (_currentIndex == 1) // Only show on Chat tab
                           IconButton(
                             icon: const Icon(Icons.auto_awesome, color: Colors.amberAccent),
-                            onPressed: () => _extractAI(group.id),
+                            onPressed: () => _extractAI(group),
                           ),
                         IconButton(
                           icon: const Icon(Icons.settings_outlined, color: Colors.white),
@@ -532,7 +543,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                             fit: BoxFit.cover,
                           )
                         : null,
-                    color: !hasBg && gradient == null ? const Color(0xFF2F7D32) : null,
+                    color: !hasBg && gradient == null ? Color(int.parse(group.baseColor)) : null,
                   ),
                 ),
               );

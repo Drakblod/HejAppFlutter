@@ -4,8 +4,9 @@ import '../../providers/postit_providers.dart';
 
 class CreatePostItSheet extends ConsumerStatefulWidget {
   final String groupId;
+  final String baseColor;
 
-  const CreatePostItSheet({super.key, required this.groupId});
+  const CreatePostItSheet({super.key, required this.groupId, required this.baseColor});
 
   @override
   ConsumerState<CreatePostItSheet> createState() => _CreatePostItSheetState();
@@ -93,7 +94,7 @@ class _CreatePostItSheetState extends ConsumerState<CreatePostItSheet> {
           const SizedBox(height: 30),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2F7D32),
+              backgroundColor: Color(int.parse(widget.baseColor)),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

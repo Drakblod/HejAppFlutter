@@ -7,8 +7,9 @@ import '../../../../features/auth/data/auth_repository.dart';
 
 class CreateProposalDialog extends ConsumerStatefulWidget {
   final String groupId;
+  final String baseColor;
 
-  const CreateProposalDialog({super.key, required this.groupId});
+  const CreateProposalDialog({super.key, required this.groupId, required this.baseColor});
 
   @override
   ConsumerState<CreateProposalDialog> createState() => _CreateProposalDialogState();
@@ -36,8 +37,8 @@ class _CreateProposalDialogState extends ConsumerState<CreateProposalDialog> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF2F7D32),
+            colorScheme: ColorScheme.light(
+              primary: Color(int.parse(widget.baseColor)),
               onPrimary: Colors.white,
               onSurface: Colors.black87,
             ),
@@ -148,7 +149,7 @@ class _CreateProposalDialogState extends ConsumerState<CreateProposalDialog> {
                     onPressed: _addDate,
                     icon: const Icon(Icons.add_circle_outline, size: 20),
                     label: const Text('Add Option'),
-                    style: TextButton.styleFrom(foregroundColor: const Color(0xFF2F7D32)),
+                    style: TextButton.styleFrom(foregroundColor: Color(int.parse(widget.baseColor))),
                   ),
                 ],
               ),
@@ -190,7 +191,7 @@ class _CreateProposalDialogState extends ConsumerState<CreateProposalDialog> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2F7D32),
+                    backgroundColor: Color(int.parse(widget.baseColor)),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,

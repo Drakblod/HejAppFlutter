@@ -8,7 +8,9 @@ class Group {
   final String? boardLabel;
   final String? chatLabel;
   final String? filesLabel;
+  final String? ocrLabel;
   final String? fontFamily;
+  final String baseColor;
   final Map<String, bool> enabledModules;
   final int createdAt;
 
@@ -22,7 +24,9 @@ class Group {
     this.boardLabel,
     this.chatLabel,
     this.filesLabel,
+    this.ocrLabel,
     this.fontFamily,
+    required this.baseColor,
     required this.enabledModules,
     required this.createdAt,
   });
@@ -35,6 +39,7 @@ class Group {
       'chat': rawModules?['chat'] ?? true,
       'files': rawModules?['files'] ?? true,
       'calendar': rawModules?['calendar'] ?? true,
+      'ocr': rawModules?['ocr'] ?? false,
     };
 
     return Group(
@@ -47,7 +52,9 @@ class Group {
       boardLabel: json['boardLabel'],
       chatLabel: json['chatLabel'],
       filesLabel: json['filesLabel'],
+      ocrLabel: json['ocrLabel'],
       fontFamily: json['fontFamily'],
+      baseColor: json['baseColor'] ?? '0xFF2F7D32',
       enabledModules: enabledModules,
       createdAt: json['createdAt'] ?? 0,
     );
@@ -63,7 +70,9 @@ class Group {
       'boardLabel': boardLabel,
       'chatLabel': chatLabel,
       'filesLabel': filesLabel,
+      'ocrLabel': ocrLabel,
       'fontFamily': fontFamily,
+      'baseColor': baseColor,
       'enabledModules': enabledModules,
       'createdAt': createdAt,
     };
