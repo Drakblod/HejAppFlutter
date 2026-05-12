@@ -45,8 +45,6 @@ class BulletinBoardView extends ConsumerWidget {
               return const Center(child: Text('No items on the board. Add one!'));
             }
 
-            final isOwner = group?.ownerId == currentUser?.uid;
-
             return RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(boardItemsProvider(groupId));
@@ -65,7 +63,7 @@ class BulletinBoardView extends ConsumerWidget {
                     final isAuthor = item.senderId == currentUser?.uid;
                     
                     // ONLY allow deleting yellow post-its, not chat messages from the board
-                    final canDelete = item.type == BoardItemType.postit && (isOwner || isAuthor);
+                    final canDelete = item.type == BoardItemType.postit && isAuthor;
   
                     return PostItWidget(
                       item: item,
