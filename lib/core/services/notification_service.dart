@@ -54,6 +54,13 @@ class NotificationService extends _$NotificationService {
       sound: true,
     );
 
+    // 1.5 Enable foreground notifications for iOS
+    await _fcm.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
     // 2. Register device if already logged in
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
@@ -90,11 +97,16 @@ class NotificationService extends _$NotificationService {
   Future<void> registerDevice(String userId) async {
     try {
       String? token;
+      
+      // On iOS, we check for APNS but use getToken() for FCM
       if (Platform.isIOS) {
-        token = await _fcm.getAPNSToken();
-      } else {
-        token = await _fcm.getToken();
+        final apnsToken = await _fcm.getAPNSToken();
+        if (apnsToken == null) {
+          debugPrint('APNS token is null. FCM will not work on physical iOS until APNS is registered.');
+        }
       }
+      
+      token = await _fcm.getToken();
 
       if (token != null) {
         debugPrint('FCM Token: $token');
