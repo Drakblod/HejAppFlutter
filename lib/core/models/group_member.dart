@@ -2,11 +2,13 @@ class GroupMember {
   final String uid;
   final String role;
   final int joinedAt;
+  final int lastReadTs;
 
   GroupMember({
     required this.uid,
     required this.role,
     required this.joinedAt,
+    this.lastReadTs = 0,
   });
 
   factory GroupMember.fromJson(String uid, Map<dynamic, dynamic> json) {
@@ -14,11 +16,13 @@ class GroupMember {
       uid: uid,
       role: json['role'] ?? 'member',
       joinedAt: json['joinedAt'] ?? 0,
+      lastReadTs: json['lastReadTs'] ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'role': role,
     'joinedAt': joinedAt,
+    'lastReadTs': lastReadTs,
   };
 }

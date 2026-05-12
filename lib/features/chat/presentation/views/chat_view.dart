@@ -4,6 +4,7 @@ import '../../../../features/auth/data/auth_repository.dart';
 import '../../providers/chat_providers.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/chat_composer.dart';
+import '../../../../core/services/database_repository.dart';
 
 class ChatView extends ConsumerStatefulWidget {
   final String groupId;
@@ -40,6 +41,19 @@ class _ChatViewState extends ConsumerState<ChatView> {
           );
         },
       );
+    });
+
+    // Update lastReadTs when messages are loaded
+    ref.listen(chatMessagesProvider(widget.groupId), (previous, next) {
+      next.whenData((messages) {
+        if (messages.isNotEmpty && currentUid != null) {
+          ref.read(databaseRepositoryProvider).updateLastRead(
+            widget.groupId, 
+            currentUid, 
+            messages.last.ts
+          );
+        }
+      });
     });
 
     return Column(

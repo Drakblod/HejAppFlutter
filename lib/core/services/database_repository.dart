@@ -249,6 +249,18 @@ class DatabaseRepository {
     });
   }
 
+  Stream<GroupMember?> streamMember(String groupId, String userId) {
+    return _db.ref('memberships/$groupId/$userId').onValue.map((event) {
+      final value = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (value == null) return null;
+      return GroupMember.fromJson(userId, value);
+    });
+  }
+
+  Future<void> updateLastRead(String groupId, String userId, int ts) async {
+    await _db.ref('memberships/$groupId/$userId').update({'lastReadTs': ts});
+  }
+
   Future<void> removeMember(String groupId, String userId) async {
     final batch = <String, dynamic>{};
     batch['memberships/$groupId/$userId'] = null;
