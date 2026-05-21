@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/models/user_profile.dart';
@@ -49,7 +49,8 @@ class ProfileController extends _$ProfileController {
     required String username,
     required String fullName,
     String? bio,
-    File? photoFile,
+    Uint8List? photoBytes,
+    String? photoFileName,
   }) async {
     state = const AsyncValue.loading();
     
@@ -64,10 +65,11 @@ class ProfileController extends _$ProfileController {
       final oldUsername = currentProfile?.username;
 
       String? photoUrl = currentProfile?.photoUrl;
-      if (photoFile != null) {
+      if (photoBytes != null && photoFileName != null) {
         photoUrl = await ref.read(storageRepositoryProvider).uploadProfilePhoto(
           uid: user.uid,
-          file: photoFile,
+          bytes: photoBytes,
+          fileName: photoFileName,
         );
       }
 

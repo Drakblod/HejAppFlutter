@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -99,7 +98,7 @@ class NotificationService extends _$NotificationService {
       String? token;
       
       // On iOS, we check for APNS but use getToken() for FCM
-      if (Platform.isIOS) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         final apnsToken = await _fcm.getAPNSToken();
         if (apnsToken == null) {
           debugPrint('APNS token is null. FCM will not work on physical iOS until APNS is registered.');

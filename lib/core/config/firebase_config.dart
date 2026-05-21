@@ -17,13 +17,14 @@ class HejAppFirebaseConfig {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return const FirebaseOptions(
-        apiKey: apiKey,
-        appId: '1:278299747848:web:some_web_id', // Would need web ID if we grow
+        apiKey: 'AIzaSyAEy7jXkOP1ul14WYt_wL6J9C7JdpM1yKs',
+        appId: '1:278299747848:web:91e7dd05083640e2ad93bd',
         messagingSenderId: messagingSenderId,
         projectId: projectId,
         authDomain: 'hejapp-a6614.firebaseapp.com',
         databaseURL: databaseUrl,
         storageBucket: storageBucket,
+        measurementId: 'G-NNDYGDZGRD',
       );
     }
     switch (defaultTargetPlatform) {

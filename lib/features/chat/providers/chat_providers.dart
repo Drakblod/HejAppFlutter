@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/services/database_repository.dart';
 import '../../../core/services/storage_repository.dart';
@@ -60,7 +60,8 @@ class ChatController extends _$ChatController {
 
   Future<void> sendPhotoMessage({
     required String groupId,
-    required File file,
+    required Uint8List bytes,
+    required String fileName,
     String? caption,
   }) async {
     state = const AsyncValue.loading();
@@ -68,7 +69,8 @@ class ChatController extends _$ChatController {
     final storage = ref.read(storageRepositoryProvider);
     final downloadUrl = await storage.uploadChatPhoto(
       groupId: groupId,
-      file: file,
+      bytes: bytes,
+      fileName: fileName,
     );
 
     if (!ref.mounted) return;

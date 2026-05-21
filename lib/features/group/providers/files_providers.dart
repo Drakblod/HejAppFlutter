@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/services/database_repository.dart';
@@ -25,6 +26,7 @@ class FilesController extends _$FilesController {
     final result = await FilePicker.pickFiles(
       type: FileType.any,
       allowMultiple: false,
+      withData: true,
     );
 
     if (!ref.mounted) return;
@@ -34,9 +36,14 @@ class FilesController extends _$FilesController {
       if (result == null || result.files.isEmpty) return;
 
       final platformFile = result.files.first;
-      if (platformFile.path == null) return;
+      
+      Uint8List? bytes = platformFile.bytes;
+      if (bytes == null && platformFile.path != null) {
+        bytes = await File(platformFile.path!).readAsBytes();
+      }
 
-      final file = File(platformFile.path!);
+      if (bytes == null) throw Exception('Could not read file data');
+
       final user = ref.read(authRepositoryProvider).currentUser;
       if (user == null) return;
 
@@ -46,7 +53,8 @@ class FilesController extends _$FilesController {
       // 1. Upload to storage
       final downloadUrl = await storage.uploadSharedFile(
         groupId: groupId,
-        file: file,
+        bytes: bytes,
+        fileName: platformFile.name,
       );
 
       // 2. Save metadata

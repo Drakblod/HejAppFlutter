@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,13 +105,15 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
       final repo = ref.read(storageRepositoryProvider);
       final db = ref.read(databaseRepositoryProvider);
       
+      final bytes = await pickedFile.readAsBytes();
+      final fileName = pickedFile.name;
+      
       String? url;
       if (isIcon) {
-        // Need to add uploadGroupIcon to StorageRepository if missing
-        url = await repo.uploadGroupBackground(groupId: widget.groupId, file: File(pickedFile.path));
+        url = await repo.uploadGroupBackground(groupId: widget.groupId, bytes: bytes, fileName: fileName);
         await db.updateGroupMeta(widget.groupId, {'icon': url});
       } else {
-        url = await repo.uploadGroupBackground(groupId: widget.groupId, file: File(pickedFile.path));
+        url = await repo.uploadGroupBackground(groupId: widget.groupId, bytes: bytes, fileName: fileName);
         await db.updateGroupMeta(widget.groupId, {'backgroundImage': url});
       }
       
@@ -561,7 +563,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
       title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 16)),
       value: value,
       activeTrackColor: Colors.blue.withValues(alpha: 0.5),
-      activeColor: Colors.blue, // This is actually for the thumb
+      activeThumbColor: Colors.blue, // This is actually for the thumb
       onChanged: (bool newValue) async {
         setState(() => _isLoading = true);
         try {

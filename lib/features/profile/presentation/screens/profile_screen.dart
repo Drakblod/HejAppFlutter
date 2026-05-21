@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,7 +19,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late TextEditingController _usernameController;
   late TextEditingController _fullNameController;
   late TextEditingController _bioController;
-  File? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
 
   @override
   void initState() {
@@ -50,7 +51,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (pickedFile != null) {
-      setState(() => _selectedImage = File(pickedFile.path));
+      final bytes = await pickedFile.readAsBytes();
+      setState(() {
+        _selectedImageBytes = bytes;
+        _selectedImageName = pickedFile.name;
+      });
     }
   }
 
@@ -61,13 +66,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       username: _usernameController.text,
       fullName: _fullNameController.text,
       bio: _bioController.text,
-      photoFile: _selectedImage,
+      photoBytes: _selectedImageBytes,
+      photoFileName: _selectedImageName,
     );
 
     if (mounted && !ref.read(profileControllerProvider).hasError) {
       setState(() {
         _isEditing = false;
-        _selectedImage = null;
+        _selectedImageBytes = null;
+        _selectedImageName = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
@@ -147,10 +154,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         CircleAvatar(
                           radius: 60,
                           backgroundColor: Colors.grey[300],
-                          backgroundImage: _selectedImage != null
-                              ? FileImage(_selectedImage!)
+                          backgroundImage: _selectedImageBytes != null
+                              ? MemoryImage(_selectedImageBytes!)
                               : (profile.photoUrl != null ? NetworkImage(profile.photoUrl!) : null) as ImageProvider?,
-                          child: profile.photoUrl == null && _selectedImage == null
+                          child: profile.photoUrl == null && _selectedImageBytes == null
                               ? const Icon(Icons.person, size: 60, color: Colors.white)
                               : null,
                         ),

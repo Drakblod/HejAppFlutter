@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -39,9 +39,11 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
     final xFile = await _imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (xFile == null) return;
 
+    final bytes = await xFile.readAsBytes();
     await ref.read(chatControllerProvider.notifier).sendPhotoMessage(
       groupId: widget.groupId,
-      file: File(xFile.path),
+      bytes: bytes,
+      fileName: xFile.name,
     );
   }
 
