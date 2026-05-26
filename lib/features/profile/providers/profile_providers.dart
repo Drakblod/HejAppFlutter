@@ -86,6 +86,7 @@ class ProfileController extends _$ProfileController {
         bio: bio,
         photoUrl: photoUrl,
         email: user.email,
+        isAdmin: currentProfile?.isAdmin ?? false,
         updatedAt: DateTime.now().millisecondsSinceEpoch,
       );
 

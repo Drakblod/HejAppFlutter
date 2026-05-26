@@ -19,6 +19,7 @@ import '../widgets/members_list_sheet.dart';
 import '../views/files_view.dart';
 import '../views/calendar_view.dart';
 import '../views/ocr_view.dart';
+import '../views/gallery_view.dart';
 import '../../providers/meeting_providers.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
@@ -105,10 +106,16 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
             'label': group.ocrLabel?.toUpperCase() ?? 'OCR',
             'view': OcrView(groupId: widget.groupId),
           },
+          {
+            'id': 'gallery',
+            'icon': Icons.photo_library_rounded,
+            'label': group.galleryLabel ?? 'GALLERY',
+            'view': GalleryView(groupId: widget.groupId),
+          },
         ];
 
         // Filter based on group settings
-        final activeModules = allModules.where((m) => group.enabledModules[m['id']] ?? true).toList();
+        final activeModules = allModules.where((m) => group.enabledModules[m['id']] ?? false).toList();
 
         // Ensure current index is valid
         if (_currentIndex >= activeModules.length) {

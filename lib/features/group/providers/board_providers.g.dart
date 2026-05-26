@@ -133,7 +133,7 @@ final class BoardItemsProvider
   }
 }
 
-String _$boardItemsHash() => r'5e45300f54d9a3a701b8aca3ac40f6ad7d4a706c';
+String _$boardItemsHash() => r'502410219ab91d0bc61466d224018e1b548d0887';
 
 final class BoardItemsFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<BoardItem>>, String> {

@@ -108,7 +108,7 @@ final class FilesControllerProvider
   FilesController create() => FilesController();
 }
 
-String _$filesControllerHash() => r'b674e89817e08e3578b3087e69d66b724ee23814';
+String _$filesControllerHash() => r'206c2362d1ec558a86a659953d0f0235f81e0bc7';
 
 abstract class _$FilesController extends $AsyncNotifier<void> {
   FutureOr<void> build();

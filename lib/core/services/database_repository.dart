@@ -7,6 +7,8 @@ import '../models/postit.dart';
 import '../models/user_profile.dart';
 import '../models/group_member.dart';
 import '../models/shared_file.dart';
+import '../models/suggestion.dart';
+import '../models/gallery_item.dart';
 
 part 'database_repository.g.dart';
 
@@ -71,6 +73,8 @@ class DatabaseRepository {
         'chat': true,
         'files': true,
         'calendar': true,
+        'suggestions': true,
+        'gallery': true,
       },
     };
 
@@ -312,6 +316,68 @@ class DatabaseRepository {
       'token': token,
       'updatedAt': ServerValue.timestamp,
     });
+  }
+
+  // --- Suggestions ---
+
+  Stream<List<Suggestion>> streamSuggestions() {
+    return _db.ref('global_suggestions').onValue.map((event) {
+      final map = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (map == null) return [];
+      
+      final items = <Suggestion>[];
+      map.forEach((key, value) {
+        items.add(Suggestion.fromJson(key.toString(), value as Map<dynamic, dynamic>));
+      });
+      // Sort by createdAt descending
+      items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return items;
+    });
+  }
+
+  Future<void> saveSuggestion(Suggestion suggestion) async {
+    await _db.ref('global_suggestions/${suggestion.id}').set(suggestion.toJson());
+  }
+
+  Future<void> updateSuggestionStatus(String id, String status) async {
+    await _db.ref('global_suggestions/$id').update({'status': status});
+  }
+
+  Future<void> deleteSuggestion(String id) async {
+    await _db.ref('global_suggestions/$id').remove();
+  }
+
+  String generateSuggestionId() {
+    return _db.ref('global_suggestions').push().key!;
+  }
+
+  // --- Gallery ---
+
+  Stream<List<GalleryItem>> streamGalleryItems(String groupId) {
+    return _db.ref('gallery/$groupId').onValue.map((event) {
+      final map = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (map == null) return [];
+      
+      final items = <GalleryItem>[];
+      map.forEach((key, value) {
+        items.add(GalleryItem.fromJson(key.toString(), value as Map<dynamic, dynamic>));
+      });
+      // Sort by createdAt descending
+      items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return items;
+    });
+  }
+
+  Future<void> saveGalleryItem(GalleryItem item) async {
+    await _db.ref('gallery/${item.groupId}/${item.id}').set(item.toJson());
+  }
+
+  Future<void> deleteGalleryItem(String groupId, String id) async {
+    await _db.ref('gallery/$groupId/$id').remove();
+  }
+
+  String generateGalleryItemId(String groupId) {
+    return _db.ref('gallery/$groupId').push().key!;
   }
 }
 

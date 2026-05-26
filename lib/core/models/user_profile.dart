@@ -5,6 +5,7 @@ class UserProfile {
   final String? email;
   final String? bio;
   final String? photoUrl;
+  final bool isAdmin;
   final int? createdAt;
   final int? updatedAt;
 
@@ -15,6 +16,7 @@ class UserProfile {
     this.email,
     this.bio,
     this.photoUrl,
+    this.isAdmin = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -27,6 +29,7 @@ class UserProfile {
       email: json['email'],
       bio: json['bio'],
       photoUrl: json['photoUrl'],
+      isAdmin: json['isAdmin'] ?? false,
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
     );
@@ -40,6 +43,7 @@ class UserProfile {
       'email': email,
       'bio': bio,
       'photoUrl': photoUrl,
+      'isAdmin': isAdmin,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };

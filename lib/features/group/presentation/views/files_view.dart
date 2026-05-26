@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../providers/files_providers.dart';
 import '../../providers/board_providers.dart';
 import '../../../../core/models/shared_file.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FilesView extends ConsumerWidget {
   final String groupId;
@@ -29,12 +30,14 @@ class FilesView extends ConsumerWidget {
       );
     });
 
+    final isUploading = ref.watch(filesControllerProvider).isLoading;
+
     return Container(
       color: const Color(0xFFF5F5F5),
       child: filesAsync.when(
         data: (files) {
           if (files.isEmpty) {
-            return _buildEmptyState(context, ref);
+            return _buildEmptyState(context, ref, isUploading);
           }
 
           return RefreshIndicator(
@@ -53,19 +56,30 @@ class FilesView extends ConsumerWidget {
                     return _buildFileCard(context, files[index]);
                   },
                 ),
-              Positioned(
-                bottom: 140,
-                right: 16,
-                child: FloatingActionButton.extended(
-                  onPressed: () => ref.read(filesControllerProvider.notifier).pickAndUploadFile(groupId),
-                  backgroundColor: const Color(0xFF2E7D32),
-                  icon: const Icon(Icons.upload_file, color: Colors.white),
-                  label: const Text('UPLOAD', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Positioned(
+                  bottom: 140,
+                  right: 16,
+                  child: FloatingActionButton.extended(
+                    onPressed: isUploading
+                        ? null
+                        : () => ref.read(filesControllerProvider.notifier).pickAndUploadFile(groupId),
+                    backgroundColor: isUploading ? Colors.grey : const Color(0xFF2E7D32),
+                    icon: isUploading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Icon(Icons.upload_file, color: Colors.white),
+                    label: Text(
+                      isUploading ? 'UPLOADING...' : 'UPLOAD',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
+              ],
+            ),
+          );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) {
@@ -90,7 +104,7 @@ class FilesView extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref, bool isUploading) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -103,11 +117,19 @@ class FilesView extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => ref.read(filesControllerProvider.notifier).pickAndUploadFile(groupId),
-            icon: const Icon(Icons.upload),
-            label: const Text('Upload first file'),
+            onPressed: isUploading
+                ? null
+                : () => ref.read(filesControllerProvider.notifier).pickAndUploadFile(groupId),
+            icon: isUploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Icon(Icons.upload),
+            label: Text(isUploading ? 'Uploading...' : 'Upload first file'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
+              backgroundColor: isUploading ? Colors.grey : const Color(0xFF2E7D32),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -130,9 +152,7 @@ class FilesView extends ConsumerWidget {
         side: BorderSide(color: Colors.grey[200]!),
       ),
       child: InkWell(
-        onTap: () {
-          // Future: Open file URL
-        },
+        onTap: () => _openFileUrl(context, file.url),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -171,12 +191,33 @@ class FilesView extends ConsumerWidget {
                 style: TextStyle(fontSize: 11, color: Colors.grey[400]),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.chevron_right, color: Colors.grey[300]),
+              IconButton(
+                icon: const Icon(Icons.download_rounded, color: Color(0xFF2E7D32)),
+                onPressed: () => _openFileUrl(context, file.url),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _openFileUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open file URL')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open file URL: $e')),
+        );
+      }
+    }
   }
 
   IconData _getFileIcon(String ext) {

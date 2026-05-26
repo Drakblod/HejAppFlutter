@@ -7,6 +7,7 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/group/presentation/screens/group_screen.dart';
 import '../../features/group/presentation/screens/group_admin_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/suggestions_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -48,6 +49,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/suggestions',
+        builder: (context, state) => const SuggestionsScreen(),
       ),
       GoRoute(
         path: '/group/:groupId/admin',

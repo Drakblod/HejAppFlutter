@@ -9,6 +9,7 @@ class Group {
   final String? chatLabel;
   final String? filesLabel;
   final String? ocrLabel;
+  final String? galleryLabel;
   final String? fontFamily;
   final String baseColor;
   final Map<String, bool> enabledModules;
@@ -25,6 +26,7 @@ class Group {
     this.chatLabel,
     this.filesLabel,
     this.ocrLabel,
+    this.galleryLabel,
     this.fontFamily,
     required this.baseColor,
     required this.enabledModules,
@@ -40,6 +42,7 @@ class Group {
       'files': rawModules?['files'] ?? true,
       'calendar': rawModules?['calendar'] ?? true,
       'ocr': rawModules?['ocr'] ?? false,
+      'gallery': rawModules?['gallery'] ?? false,
     };
 
     return Group(
@@ -53,6 +56,7 @@ class Group {
       chatLabel: json['chatLabel'],
       filesLabel: json['filesLabel'],
       ocrLabel: json['ocrLabel'],
+      galleryLabel: json['galleryLabel'],
       fontFamily: json['fontFamily'],
       baseColor: json['baseColor'] ?? '0xFF2F7D32',
       enabledModules: enabledModules,
@@ -71,6 +75,7 @@ class Group {
       'chatLabel': chatLabel,
       'filesLabel': filesLabel,
       'ocrLabel': ocrLabel,
+      'galleryLabel': galleryLabel,
       'fontFamily': fontFamily,
       'baseColor': baseColor,
       'enabledModules': enabledModules,

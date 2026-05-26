@@ -53,6 +53,23 @@ class StorageRepository {
     final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
     final ref = _storage.ref().child('shared_files').child(groupId).child(name);
     
+    final uploadTask = await ref.putData(
+      bytes,
+      SettableMetadata(
+        contentDisposition: 'attachment; filename="$fileName"',
+      ),
+    );
+    return await uploadTask.ref.getDownloadURL();
+  }
+
+  Future<String> uploadGalleryPhoto({
+    required String groupId,
+    required Uint8List bytes,
+    required String fileName,
+  }) async {
+    final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+    final ref = _storage.ref().child('gallery_photos').child(groupId).child(name);
+    
     final uploadTask = await ref.putData(bytes);
     return await uploadTask.ref.getDownloadURL();
   }

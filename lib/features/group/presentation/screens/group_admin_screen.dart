@@ -26,6 +26,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
   late TextEditingController _chatLabelController;
   late TextEditingController _filesLabelController;
   late TextEditingController _ocrLabelController;
+  late TextEditingController _galleryLabelController;
   String? _selectedFont;
   String? _selectedBaseColor;
 
@@ -37,6 +38,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     _chatLabelController = TextEditingController();
     _filesLabelController = TextEditingController();
     _ocrLabelController = TextEditingController();
+    _galleryLabelController = TextEditingController();
     
     // Initialize with current meta
     Future.microtask(() async {
@@ -48,6 +50,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
           _chatLabelController.text = meta.chatLabel ?? 'CHAT';
           _filesLabelController.text = meta.filesLabel ?? 'FILES';
           _ocrLabelController.text = meta.ocrLabel ?? 'OCR';
+          _galleryLabelController.text = meta.galleryLabel ?? 'GALLERY';
           _selectedFont = meta.fontFamily;
           _selectedBaseColor = meta.baseColor;
         });
@@ -62,6 +65,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     _chatLabelController.dispose();
     _filesLabelController.dispose();
     _ocrLabelController.dispose();
+    _galleryLabelController.dispose();
     super.dispose();
   }
 
@@ -73,6 +77,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
         'chatLabel': _chatLabelController.text.trim(),
         'filesLabel': _filesLabelController.text.trim(),
         'ocrLabel': _ocrLabelController.text.trim(),
+        'galleryLabel': _galleryLabelController.text.trim(),
         'fontFamily': _selectedFont,
         'baseColor': _selectedBaseColor ?? '0xFF2F7D32',
       });
@@ -370,6 +375,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     _buildModuleToggle('Shared Files', 'files', group.enabledModules['files'] ?? true),
                     _buildModuleToggle('Gathering Planner', 'calendar', group.enabledModules['calendar'] ?? true),
                     _buildModuleToggle('OCR-delare', 'ocr', group.enabledModules['ocr'] ?? false),
+                    _buildModuleToggle('Gallery', 'gallery', group.enabledModules['gallery'] ?? false),
                     const SizedBox(height: 32),
 
                     // Custom Identity Section
@@ -381,6 +387,8 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     _buildIdentityField('Files Tab Name', _filesLabelController),
                     const SizedBox(height: 16),
                     _buildIdentityField('OCR Tab Name', _ocrLabelController),
+                    const SizedBox(height: 16),
+                    _buildIdentityField('Gallery Tab Name', _galleryLabelController),
                     const SizedBox(height: 24),
                     const Text('Typography Style:', style: TextStyle(color: Colors.white70, fontSize: 13)),
                     const SizedBox(height: 12),

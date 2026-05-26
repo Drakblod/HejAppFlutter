@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'profile_providers.dart';
+part of 'suggestions_providers.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,73 +9,73 @@ part of 'profile_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(currentUserProfile)
-const currentUserProfileProvider = CurrentUserProfileProvider._();
+@ProviderFor(suggestions)
+const suggestionsProvider = SuggestionsProvider._();
 
-final class CurrentUserProfileProvider
+final class SuggestionsProvider
     extends
         $FunctionalProvider<
-          AsyncValue<UserProfile?>,
-          UserProfile?,
-          Stream<UserProfile?>
+          AsyncValue<List<Suggestion>>,
+          List<Suggestion>,
+          Stream<List<Suggestion>>
         >
-    with $FutureModifier<UserProfile?>, $StreamProvider<UserProfile?> {
-  const CurrentUserProfileProvider._()
+    with $FutureModifier<List<Suggestion>>, $StreamProvider<List<Suggestion>> {
+  const SuggestionsProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'currentUserProfileProvider',
+        name: r'suggestionsProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$currentUserProfileHash();
+  String debugGetCreateSourceHash() => _$suggestionsHash();
 
   @$internal
   @override
-  $StreamProviderElement<UserProfile?> $createElement(
+  $StreamProviderElement<List<Suggestion>> $createElement(
     $ProviderPointer pointer,
   ) => $StreamProviderElement(pointer);
 
   @override
-  Stream<UserProfile?> create(Ref ref) {
-    return currentUserProfile(ref);
+  Stream<List<Suggestion>> create(Ref ref) {
+    return suggestions(ref);
   }
 }
 
-String _$currentUserProfileHash() =>
-    r'4d717fca883931b6e657899c4e06ce0408944bc8';
+String _$suggestionsHash() => r'5e6de5096707ad3135086fe6d48a74e9e8634322';
 
-@ProviderFor(ProfileController)
-const profileControllerProvider = ProfileControllerProvider._();
+@ProviderFor(SuggestionsController)
+const suggestionsControllerProvider = SuggestionsControllerProvider._();
 
-final class ProfileControllerProvider
-    extends $AsyncNotifierProvider<ProfileController, void> {
-  const ProfileControllerProvider._()
+final class SuggestionsControllerProvider
+    extends $AsyncNotifierProvider<SuggestionsController, void> {
+  const SuggestionsControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'profileControllerProvider',
+        name: r'suggestionsControllerProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$profileControllerHash();
+  String debugGetCreateSourceHash() => _$suggestionsControllerHash();
 
   @$internal
   @override
-  ProfileController create() => ProfileController();
+  SuggestionsController create() => SuggestionsController();
 }
 
-String _$profileControllerHash() => r'0e73962dc9c1fb5f9a8e8794f760d56ab40a363c';
+String _$suggestionsControllerHash() =>
+    r'46a58f900178df4bb65291181db4ddec35851967';
 
-abstract class _$ProfileController extends $AsyncNotifier<void> {
+abstract class _$SuggestionsController extends $AsyncNotifier<void> {
   FutureOr<void> build();
   @$mustCallSuper
   @override

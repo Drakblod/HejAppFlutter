@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/profile_providers.dart';
 import '../../../auth/data/auth_repository.dart';
 
@@ -238,7 +239,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 32),
+                  if (!_isEditing) ...[
+                    const Divider(),
+                    ListTile(
+                      leading: Icon(Icons.lightbulb_outline, color: Colors.amber.shade800),
+                      title: const Text('Suggestion Box'),
+                      subtitle: const Text('Share ideas & report bugs with the developer'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push('/suggestions'),
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 24),
+                  ],
                   if (!_isEditing)
                     SizedBox(
                       width: double.infinity,
