@@ -303,61 +303,72 @@ class _ProposalCard extends ConsumerWidget {
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: InkWell(
-                onTap: () => ref.read(meetingRepositoryProvider).voteForDate(
-                  proposal.groupId,
-                  proposal.id,
-                  index,
-                  currentUserId,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.15) : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.03),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.3) : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.3) : Colors.transparent,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => ref.read(meetingRepositoryProvider).voteForDate(
+                          proposal.groupId,
+                          proposal.id,
+                          index,
+                          currentUserId,
+                        ),
+                        borderRadius: isOwner
+                            ? const BorderRadius.horizontal(left: Radius.circular(11))
+                            : BorderRadius.circular(11),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                hasVoted ? Icons.check_circle : Icons.circle_outlined,
+                                color: hasVoted ? Color(int.parse(baseColor)) : Colors.black12,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  DateFormat('EEE, MMM d • HH:mm').format(date),
+                                  style: TextStyle(
+                                    color: hasVoted ? Color(int.parse(baseColor)) : Colors.black87,
+                                    fontWeight: hasVoted ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${votes.length} votes',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        hasVoted ? Icons.check_circle : Icons.circle_outlined,
-                        color: hasVoted ? Color(int.parse(baseColor)) : Colors.black12,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          DateFormat('EEE, MMM d • HH:mm').format(date),
-                          style: TextStyle(
-                            color: hasVoted ? Color(int.parse(baseColor)) : Colors.black87,
-                            fontWeight: hasVoted ? FontWeight.bold : FontWeight.normal,
-                          ),
+                    if (isOwner)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: IconButton(
+                          icon: Icon(Icons.stars, color: Color(int.parse(baseColor)), size: 24),
+                          tooltip: 'Confirm this date',
+                          onPressed: () => _confirmMeeting(context, ref, proposal, date),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${votes.length} votes',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      if (isOwner)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: InkWell(
-                            onTap: () => _confirmMeeting(context, ref, proposal, date),
-                            child: Icon(Icons.stars, color: Color(int.parse(baseColor)), size: 24),
-                          ),
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             );

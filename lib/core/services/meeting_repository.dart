@@ -34,7 +34,11 @@ class MeetingRepository {
     
     // Check if user already voted for this specific date
     final snapshot = await ref.get();
-    List<dynamic> currentVotes = (snapshot.value as List<dynamic>?) ?? [];
+    final value = snapshot.value;
+    final List<String> currentVotes = [];
+    if (value is Iterable) {
+      currentVotes.addAll(value.map((e) => e.toString()));
+    }
     
     if (currentVotes.contains(userId)) {
       // Remove vote
