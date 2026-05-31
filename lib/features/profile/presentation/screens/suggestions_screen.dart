@@ -347,8 +347,8 @@ class SuggestionsScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -403,7 +403,7 @@ class SuggestionsScreen extends ConsumerWidget {
                 ElevatedButton(
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      Navigator.pop(context);
+                      Navigator.pop(sheetContext);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Submitting suggestion...')),
                       );
