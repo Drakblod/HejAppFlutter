@@ -2,9 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import '../../providers/board_providers.dart';
 import '../../../../core/services/database_repository.dart';
+import '../../../../core/services/storage_repository.dart';
+import '../../../../core/res/app_themes.dart';
+import '../widgets/ai_background_studio.dart';
 
 class GroupAdminScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -67,6 +71,47 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     _ocrLabelController.dispose();
     _galleryLabelController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage(bool isIcon) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (pickedFile == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(storageRepositoryProvider);
+      final db = ref.read(databaseRepositoryProvider);
+      
+      final bytes = await pickedFile.readAsBytes();
+      final fileName = pickedFile.name;
+      
+      String? url;
+      if (isIcon) {
+        url = await repo.uploadGroupBackground(groupId: widget.groupId, bytes: bytes, fileName: fileName);
+        await db.updateGroupMeta(widget.groupId, {'icon': url});
+      } else {
+        url = await repo.uploadGroupBackground(groupId: widget.groupId, bytes: bytes, fileName: fileName);
+        await db.updateGroupMeta(widget.groupId, {'backgroundImage': url});
+      }
+      
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Header background updated!')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _updateTheme(String themeId) async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
+        'theme': themeId,
+        'backgroundImage': null, // Clear custom BG when picking a theme
+      });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Theme updated to $themeId')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _saveChanges() async {
@@ -259,7 +304,87 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                         enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                       ),
                     ),
+                    const SizedBox(height: 32),
+
+                    // Header Background Section
+                    _buildSectionTitle('HEADER BACKGROUND'),
+                    const Text('Choose a gradient preset:', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 50,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: AppThemes.presets.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 16),
+                        itemBuilder: (context, index) {
+                          final theme = AppThemes.presets[index];
+                          final isSelected = group.theme == theme['id'] && group.backgroundImage == null;
+                          return GestureDetector(
+                            onTap: () => _updateTheme(theme['id']),
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(colors: theme['colors']),
+                                border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
+                              ),
+                              child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                     const SizedBox(height: 24),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Upload Header Background', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Choose a custom background image from your gallery', style: TextStyle(color: Colors.white60)),
+                      trailing: const Icon(Icons.file_upload_outlined, color: Colors.blue),
+                      onTap: () => _pickImage(false),
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('✨ AI Background Studio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => AIBackgroundStudio(groupId: widget.groupId),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(alpha: 0.05),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: const BorderSide(color: Colors.white10),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
+                                SizedBox(width: 12),
+                                Text(
+                                  'GENERATE AI BACKGROUND',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
                     
 
                     
