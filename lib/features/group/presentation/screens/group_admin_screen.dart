@@ -18,6 +18,7 @@ class GroupAdminScreen extends ConsumerStatefulWidget {
 class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
   bool _isLoading = false;
   late TextEditingController _nameController;
+  late TextEditingController _descriptionController;
   late TextEditingController _boardLabelController;
   late TextEditingController _chatLabelController;
   late TextEditingController _filesLabelController;
@@ -30,6 +31,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
     _boardLabelController = TextEditingController();
     _chatLabelController = TextEditingController();
     _filesLabelController = TextEditingController();
@@ -42,6 +44,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
       if (meta != null) {
         setState(() {
           _nameController.text = meta.name;
+          _descriptionController.text = meta.description ?? '';
           _boardLabelController.text = meta.boardLabel ?? 'BOARD';
           _chatLabelController.text = meta.chatLabel ?? 'CHAT';
           _filesLabelController.text = meta.filesLabel ?? 'FILES';
@@ -57,6 +60,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     _boardLabelController.dispose();
     _chatLabelController.dispose();
     _filesLabelController.dispose();
@@ -91,6 +95,17 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     try {
       await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {'name': newName});
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group name updated')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _updateDescription() async {
+    final newDesc = _descriptionController.text.trim();
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {'description': newDesc});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group description updated')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -247,6 +262,21 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.check, color: Colors.green),
                           onPressed: _updateName,
+                        ),
+                        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _descriptionController,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'Group Description / About',
+                        labelStyle: const TextStyle(color: Colors.white60),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.check, color: Colors.green),
+                          onPressed: _updateDescription,
                         ),
                         enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                       ),

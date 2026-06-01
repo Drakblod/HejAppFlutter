@@ -5,6 +5,7 @@ class Group {
   final String theme;
   final String ownerId;
   final String? backgroundImage;
+  final String? description;
   final String? boardLabel;
   final String? chatLabel;
   final String? filesLabel;
@@ -22,6 +23,7 @@ class Group {
     required this.theme,
     required this.ownerId,
     this.backgroundImage,
+    this.description,
     this.boardLabel,
     this.chatLabel,
     this.filesLabel,
@@ -52,6 +54,7 @@ class Group {
       theme: json['theme'] ?? 'Default',
       ownerId: json['ownerId'] ?? '',
       backgroundImage: json['backgroundImage'],
+      description: json['description'],
       boardLabel: json['boardLabel'],
       chatLabel: json['chatLabel'],
       filesLabel: json['filesLabel'],
@@ -71,6 +74,7 @@ class Group {
       'theme': theme,
       'ownerId': ownerId,
       'backgroundImage': backgroundImage,
+      'description': description,
       'boardLabel': boardLabel,
       'chatLabel': chatLabel,
       'filesLabel': filesLabel,
