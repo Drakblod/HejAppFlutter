@@ -69,10 +69,20 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     super.dispose();
   }
 
-  Future<void> _updateIdentity() async {
+  Future<void> _saveChanges() async {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Group name cannot be empty'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
+        'name': newName,
+        'description': _descriptionController.text.trim(),
         'boardLabel': _boardLabelController.text.trim(),
         'chatLabel': _chatLabelController.text.trim(),
         'filesLabel': _filesLabelController.text.trim(),
@@ -81,31 +91,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
         'fontFamily': _selectedFont,
         'baseColor': _selectedBaseColor ?? '0xFF2F7D32',
       });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Identity updated!')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _updateName() async {
-    final newName = _nameController.text.trim();
-    if (newName.isEmpty) return;
-
-    setState(() => _isLoading = true);
-    try {
-      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {'name': newName});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group name updated')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _updateDescription() async {
-    final newDesc = _descriptionController.text.trim();
-    setState(() => _isLoading = true);
-    try {
-      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {'description': newDesc});
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group description updated')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group settings saved!')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -256,14 +242,10 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     TextField(
                       controller: _nameController,
                       style: const TextStyle(color: Colors.white, fontSize: 18),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Group Name',
-                        labelStyle: const TextStyle(color: Colors.white60),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.check, color: Colors.green),
-                          onPressed: _updateName,
-                        ),
-                        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                        labelStyle: TextStyle(color: Colors.white60),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -271,14 +253,10 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                       controller: _descriptionController,
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                       maxLines: 3,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Group Description / About',
-                        labelStyle: const TextStyle(color: Colors.white60),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.check, color: Colors.green),
-                          onPressed: _updateDescription,
-                        ),
-                        enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                        labelStyle: TextStyle(color: Colors.white60),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -338,13 +316,13 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _updateIdentity,
+                        onPressed: _saveChanges,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text('SAVE IDENTITY CHANGES'),
+                        child: const Text('SAVE CHANGES'),
                       ),
                     ),
                     const SizedBox(height: 32),
