@@ -1,11 +1,11 @@
 {
-    "name": "hejapp_flutter",
-    "short_name": "hejapp_flutter",
+    "name": "Hej — your group, your space",
+    "short_name": "Hej",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F4F6F3",
+    "theme_color": "#225C32",
+    "description": "Flexible digital spaces for groups and communities.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
