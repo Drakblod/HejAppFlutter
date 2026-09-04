@@ -13,31 +13,30 @@ class GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = _colorFromTheme(group.theme);
+    final themeColor = _groupColor(group);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: themeColor.withValues(alpha: 0.15),
-            offset: const Offset(0, 8),
-            blurRadius: 20,
+            color: themeColor.withValues(alpha: 0.12),
+            offset: const Offset(0, 10),
+            blurRadius: 24,
           ),
         ],
       ),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFE2E8E2)),
             ),
             child: Row(
               children: [
@@ -45,8 +44,8 @@ class GroupCard extends StatelessWidget {
                 Hero(
                   tag: 'group_icon_${group.id}',
                   child: Container(
-                    width: 64,
-                    height: 64,
+                    width: 68,
+                    height: 68,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -56,7 +55,7 @@ class GroupCard extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
                       child: Text(
@@ -83,7 +82,7 @@ class GroupCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Joined recently', // Could be dynamic if we had member list count
+                        _moduleSummary(group.enabledModules),
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[500],
@@ -96,9 +95,9 @@ class GroupCard extends StatelessWidget {
                 
                 // Action Arrow
                 Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Colors.grey[300],
+                  Icons.arrow_forward_rounded,
+                  size: 21,
+                  color: themeColor.withValues(alpha: 0.7),
                 ),
               ],
             ),
@@ -106,6 +105,17 @@ class GroupCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _groupColor(Group group) {
+    final parsed = int.tryParse(group.baseColor);
+    if (parsed != null) return Color(parsed);
+    return _colorFromTheme(group.theme);
+  }
+
+  String _moduleSummary(Map<String, bool> modules) {
+    final count = modules.values.where((enabled) => enabled).length;
+    return '$count ${count == 1 ? 'module' : 'modules'} enabled';
   }
 
   Color _colorFromTheme(String theme) {

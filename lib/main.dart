@@ -21,11 +21,7 @@ void main() async {
     }
   }
 
-  runApp(
-    const ProviderScope(
-      child: HejApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: HejApp()));
 }
 
 class HejApp extends ConsumerStatefulWidget {
@@ -50,13 +46,40 @@ class _HejAppState extends ConsumerState<HejApp> {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'HejApp',
+      title: 'Hej — your group, your space',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F7D32), // "Hej Green"
+          seedColor: const Color(0xFF225C32),
+          surface: const Color(0xFFFBFCFA),
         ),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF4F6F3),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFD9E1D9)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFD9E1D9)),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 17,
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
       ),
       routerConfig: router,
     );

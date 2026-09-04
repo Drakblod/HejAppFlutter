@@ -15,11 +15,7 @@ Stream<List<Group>> userGroups(Ref ref) {
   // 1. Get the stream of group IDs for this user
   // 2. Map those IDs to actual Group metadata
   return db.streamUserGroupIds(user.uid).asyncMap((groupIds) async {
-    final groups = <Group>[];
-    for (final id in groupIds) {
-      final meta = await db.getGroupMeta(id);
-      if (meta != null) groups.add(meta);
-    }
-    return groups;
+    final results = await Future.wait(groupIds.map(db.getGroupMeta));
+    return results.whereType<Group>().toList();
   });
 }

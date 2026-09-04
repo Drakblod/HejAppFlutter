@@ -43,7 +43,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
     super.initState();
     _splashController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 700),
     );
 
     _bgScaleAnimation = Tween<double>(begin: 1.2, end: 1.0).animate(
@@ -52,8 +52,8 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
 
     _splashController.forward();
 
-    // Hide splash after 2 seconds
-    Timer(const Duration(milliseconds: 2000), () {
+    // Keep the branded transition brief so returning users reach content fast.
+    Timer(const Duration(milliseconds: 900), () {
       if (mounted) {
         setState(() => _showSplash = false);
       }
@@ -117,63 +117,212 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
         // Filter based on group settings
         final activeModules = allModules.where((m) => group.enabledModules[m['id']] ?? false).toList();
 
+        if (activeModules.isEmpty) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF4F6F3),
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => context.go('/home'),
+              ),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.widgets_outlined, size: 56, color: Color(0xFF5F7465)),
+                    const SizedBox(height: 18),
+                    Text('This space has no active modules', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    const Text('Enable at least one module in the space settings.'),
+                    if (group.ownerId == ref.watch(authRepositoryProvider).currentUser?.uid) ...[
+                      const SizedBox(height: 22),
+                      FilledButton.icon(
+                        onPressed: () => context.push('/group/${widget.groupId}/admin'),
+                        icon: const Icon(Icons.settings_outlined),
+                        label: const Text('Open settings'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
         // Ensure current index is valid
         if (_currentIndex >= activeModules.length) {
           _currentIndex = 0;
         }
 
-        return Scaffold(
-          extendBody: true,
-          backgroundColor: const Color(0xFFF5F5F5),
-          body: Stack(
-            children: [
-              // 1. Content Area (Header + Main Views)
-              Column(
-                children: [
-                  _buildHeader(group),
-                  Expanded(
-                    child: IndexedStack(
-                      index: _currentIndex,
-                      children: activeModules.map<Widget>((m) => m['view'] as Widget).toList(),
-                    ),
+        final isDesktop = MediaQuery.sizeOf(context).width >= 900;
+        final workspace = Stack(
+          children: [
+            Column(
+              children: [
+                _buildHeader(group),
+                Expanded(
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: activeModules.map<Widget>((m) => m['view'] as Widget).toList(),
                   ),
-                ],
-              ),
-
-              // 2. Bottom Navigation (Floating)
+                ),
+              ],
+            ),
+            if (!isDesktop)
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
                 child: _buildBottomNav(group, activeModules),
               ),
-
-              // 3. FAB (Only on Board)
-              if (activeModules[_currentIndex]['id'] == 'board')
-                Positioned(
-                  bottom: 100 + MediaQuery.of(context).padding.bottom,
-                  right: 16,
-                  child: _buildFAB(group),
+            if (activeModules[_currentIndex]['id'] == 'board')
+              Positioned(
+                bottom: isDesktop ? 28 : 100 + MediaQuery.of(context).padding.bottom,
+                right: isDesktop ? 28 : 16,
+                child: _buildFAB(group),
+              ),
+            if (!_splashGone)
+              IgnorePointer(
+                ignoring: !_showSplash,
+                child: AnimatedOpacity(
+                  opacity: _showSplash ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeInOut,
+                  onEnd: () => setState(() => _splashGone = true),
+                  child: _buildSplashLayer(group),
                 ),
+              ),
+          ],
+        );
 
-              // 4. Welcome Splash Layer
-              if (!_splashGone)
-                IgnorePointer(
-                  ignoring: !_showSplash,
-                  child: AnimatedOpacity(
-                    opacity: _showSplash ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.easeInOut,
-                    onEnd: () => setState(() => _splashGone = true),
-                    child: _buildSplashLayer(group),
-                  ),
-                ),
-            ],
-          ),
+        return Scaffold(
+          extendBody: true,
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: isDesktop
+              ? Row(
+                  children: [
+                    _buildDesktopSidebar(group, activeModules),
+                    const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFE2E8E2)),
+                    Expanded(child: workspace),
+                  ],
+                )
+              : workspace,
         );
       },
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
+    );
+  }
+
+  Widget _buildDesktopSidebar(dynamic group, List<Map<String, dynamic>> activeModules) {
+    return Container(
+      width: 246,
+      color: const Color(0xFF111813),
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Color(int.parse(group.baseColor)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 11),
+                  const Text(
+                    'Hej',
+                    style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 34),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'SPACE MODULES',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: ListView.separated(
+                itemCount: activeModules.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 5),
+                itemBuilder: (context, index) {
+                  final module = activeModules[index];
+                  final selected = index == _currentIndex;
+                  return Material(
+                    color: selected ? Colors.white.withValues(alpha: 0.11) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      onTap: () => setState(() => _currentIndex = index),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                        child: Row(
+                          children: [
+                            Icon(
+                              module['icon'] as IconData,
+                              color: selected ? Colors.white : Colors.white54,
+                              size: 21,
+                            ),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Text(
+                                (module['label'] as String).toLowerCase(),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: selected ? Colors.white : Colors.white60,
+                                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            if (selected)
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(color: Color(0xFFD8F3DC), shape: BoxShape.circle),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const Divider(color: Colors.white12),
+            TextButton.icon(
+              onPressed: () => context.go('/home'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white60,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              ),
+              icon: const Icon(Icons.grid_view_rounded, size: 19),
+              label: const Text('All spaces'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
