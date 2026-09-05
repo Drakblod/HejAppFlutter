@@ -8,11 +8,7 @@ class ChatBubble extends ConsumerWidget {
   final ChatMessage message;
   final bool isMe;
 
-  const ChatBubble({
-    super.key,
-    required this.message,
-    required this.isMe,
-  });
+  const ChatBubble({super.key, required this.message, required this.isMe});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,9 +21,11 @@ class ChatBubble extends ConsumerWidget {
         final photoUrl = profile?.photoUrl;
 
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
           child: Row(
-            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isMe
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (!isMe) ...[
@@ -36,7 +34,9 @@ class ChatBubble extends ConsumerWidget {
               ],
               Flexible(
                 child: Column(
-                  crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  crossAxisAlignment: isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
                     // Sender Name
                     if (!isMe)
@@ -59,8 +59,13 @@ class ChatBubble extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 4, right: 4),
                       child: Text(
-                        DateFormat('HH:mm').format(DateTime.fromMillisecondsSinceEpoch(message.ts)),
-                        style: const TextStyle(fontSize: 10, color: Colors.black38),
+                        DateFormat('HH:mm').format(
+                          DateTime.fromMillisecondsSinceEpoch(message.ts),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.black38,
+                        ),
                       ),
                     ),
                   ],
@@ -71,7 +76,8 @@ class ChatBubble extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(), // Or a tiny placeholder
-      error: (_, __) => _buildStaticBubble(context), // Fallback to current behavior
+      error: (_, __) =>
+          _buildStaticBubble(context), // Fallback to current behavior
     );
   }
 
@@ -83,7 +89,11 @@ class ChatBubble extends ConsumerWidget {
       child: photoUrl == null
           ? Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF2E7D32),
+                fontWeight: FontWeight.bold,
+              ),
             )
           : null,
     );
@@ -101,26 +111,26 @@ class ChatBubble extends ConsumerWidget {
       ),
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.7,
+          maxWidth: MediaQuery.sizeOf(context).width >= 800
+              ? 620
+              : MediaQuery.sizeOf(context).width * 0.78,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Reply Preview
-            if (message.replyToId != null)
-              _buildReplyPreview(),
+            if (message.replyToId != null) _buildReplyPreview(),
 
             // Photo
-            if (message.photoUrl != null)
-              _buildPhoto(),
+            if (message.photoUrl != null) _buildPhoto(),
 
             // Text
             if (message.text.isNotEmpty)
               Text(
                 message.text,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 15.5,
                   color: isMe ? Colors.white : Colors.black87,
                   height: 1.3,
                 ),
@@ -169,10 +179,7 @@ class ChatBubble extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          message.photoUrl!,
-          fit: BoxFit.cover,
-        ),
+        child: Image.network(message.photoUrl!, fit: BoxFit.cover),
       ),
     );
   }
@@ -180,9 +187,11 @@ class ChatBubble extends ConsumerWidget {
   Widget _buildStaticBubble(BuildContext context) {
     // Fallback if profile fails
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
       child: Column(
-        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Text(
             message.senderName,
