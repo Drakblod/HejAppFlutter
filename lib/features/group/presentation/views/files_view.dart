@@ -33,7 +33,7 @@ class FilesView extends ConsumerWidget {
     final isUploading = ref.watch(filesControllerProvider).isLoading;
 
     return Container(
-      color: const Color(0xFFF5F5F5),
+      color: Colors.transparent,
       child: filesAsync.when(
         data: (files) {
           if (files.isEmpty) {
@@ -62,18 +62,28 @@ class FilesView extends ConsumerWidget {
                   child: FloatingActionButton.extended(
                     onPressed: isUploading
                         ? null
-                        : () => ref.read(filesControllerProvider.notifier).pickAndUploadFile(groupId),
-                    backgroundColor: isUploading ? Colors.grey : const Color(0xFF2E7D32),
+                        : () => ref
+                              .read(filesControllerProvider.notifier)
+                              .pickAndUploadFile(groupId),
+                    backgroundColor: isUploading
+                        ? Colors.grey
+                        : const Color(0xFF2E7D32),
                     icon: isUploading
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : const Icon(Icons.upload_file, color: Colors.white),
                     label: Text(
                       isUploading ? 'UPLOADING...' : 'UPLOAD',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -104,7 +114,11 @@ class FilesView extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, WidgetRef ref, bool isUploading) {
+  Widget _buildEmptyState(
+    BuildContext context,
+    WidgetRef ref,
+    bool isUploading,
+  ) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -113,23 +127,34 @@ class FilesView extends ConsumerWidget {
           const SizedBox(height: 16),
           Text(
             'No files shared yet',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: isUploading
                 ? null
-                : () => ref.read(filesControllerProvider.notifier).pickAndUploadFile(groupId),
+                : () => ref
+                      .read(filesControllerProvider.notifier)
+                      .pickAndUploadFile(groupId),
             icon: isUploading
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : const Icon(Icons.upload),
             label: Text(isUploading ? 'Uploading...' : 'Upload first file'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isUploading ? Colors.grey : const Color(0xFF2E7D32),
+              backgroundColor: isUploading
+                  ? Colors.grey
+                  : const Color(0xFF2E7D32),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -140,7 +165,9 @@ class FilesView extends ConsumerWidget {
   }
 
   Widget _buildFileCard(BuildContext context, SharedFile file) {
-    final dateStr = DateFormat('MMM d, HH:mm').format(DateTime.fromMillisecondsSinceEpoch(file.ts));
+    final dateStr = DateFormat(
+      'MMM d, HH:mm',
+    ).format(DateTime.fromMillisecondsSinceEpoch(file.ts));
     final sizeStr = _formatBytes(file.size);
     final icon = _getFileIcon(file.type);
 
@@ -176,7 +203,10 @@ class FilesView extends ConsumerWidget {
                       file.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -192,7 +222,10 @@ class FilesView extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.download_rounded, color: Color(0xFF2E7D32)),
+                icon: const Icon(
+                  Icons.download_rounded,
+                  color: Color(0xFF2E7D32),
+                ),
                 onPressed: () => _openFileUrl(context, file.url),
               ),
             ],
@@ -205,7 +238,10 @@ class FilesView extends ConsumerWidget {
   Future<void> _openFileUrl(BuildContext context, String url) async {
     final uri = Uri.parse(url);
     try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not open file URL')),
@@ -213,26 +249,32 @@ class FilesView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open file URL: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not open file URL: $e')));
       }
     }
   }
 
   IconData _getFileIcon(String ext) {
     switch (ext.toLowerCase()) {
-      case 'pdf': return Icons.picture_as_pdf;
+      case 'pdf':
+        return Icons.picture_as_pdf;
       case 'jpg':
       case 'jpeg':
-      case 'png': return Icons.image;
+      case 'png':
+        return Icons.image;
       case 'doc':
-      case 'docx': return Icons.description;
+      case 'docx':
+        return Icons.description;
       case 'xls':
-      case 'xlsx': return Icons.table_chart;
+      case 'xlsx':
+        return Icons.table_chart;
       case 'mp4':
-      case 'mov': return Icons.video_file;
-      default: return Icons.insert_drive_file;
+      case 'mov':
+        return Icons.video_file;
+      default:
+        return Icons.insert_drive_file;
     }
   }
 

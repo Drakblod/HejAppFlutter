@@ -20,7 +20,7 @@ class CalendarView extends ConsumerWidget {
     final currentUser = ref.watch(authRepositoryProvider).currentUser;
 
     return Container(
-      color: const Color(0xFFF5F5F5),
+      color: Colors.transparent,
       child: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(groupProposalsProvider(groupId));
@@ -48,7 +48,9 @@ class CalendarView extends ConsumerWidget {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Only group admins can propose meetings')),
+                    const SnackBar(
+                      content: Text('Only group admins can propose meetings'),
+                    ),
                   );
                 }
               },
@@ -58,17 +60,22 @@ class CalendarView extends ConsumerWidget {
               data: (meetings) => meetings.isEmpty
                   ? const _EmptyState(text: 'No confirmed gatherings yet')
                   : Column(
-                      children: meetings.map((m) => _ConfirmedMeetingCard(
-                        meeting: m,
-                        baseColor: groupAsync.value?.baseColor ?? '0xFF2F7D32',
-                      )).toList(),
+                      children: meetings
+                          .map(
+                            (m) => _ConfirmedMeetingCard(
+                              meeting: m,
+                              baseColor:
+                                  groupAsync.value?.baseColor ?? '0xFF2F7D32',
+                            ),
+                          )
+                          .toList(),
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('Error: $e'),
             ),
-  
+
             const SizedBox(height: 32),
-  
+
             // Header for Proposals
             _SectionHeader(
               title: 'ACTIVE PROPOSALS',
@@ -80,13 +87,19 @@ class CalendarView extends ConsumerWidget {
               data: (proposals) => proposals.isEmpty
                   ? const _EmptyState(text: 'No active proposals. Start one!')
                   : Column(
-                      children: proposals.map((p) => _ProposalCard(
-                        proposal: p,
-                        isOwner: groupAsync.value?.ownerId == currentUser?.uid,
-                        currentUserId: currentUser?.uid ?? '',
-                        groupId: groupId,
-                        baseColor: groupAsync.value?.baseColor ?? '0xFF2F7D32',
-                      )).toList(),
+                      children: proposals
+                          .map(
+                            (p) => _ProposalCard(
+                              proposal: p,
+                              isOwner:
+                                  groupAsync.value?.ownerId == currentUser?.uid,
+                              currentUserId: currentUser?.uid ?? '',
+                              groupId: groupId,
+                              baseColor:
+                                  groupAsync.value?.baseColor ?? '0xFF2F7D32',
+                            ),
+                          )
+                          .toList(),
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('Error: $e'),
@@ -155,7 +168,10 @@ class _EmptyState extends StatelessWidget {
         border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: Center(
-        child: Text(text, style: const TextStyle(color: Colors.black38, fontSize: 14)),
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.black38, fontSize: 14),
+        ),
       ),
     );
   }
@@ -176,7 +192,10 @@ class _ConfirmedMeetingCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(int.parse(baseColor)), Color(int.parse(baseColor)).withValues(alpha: 0.8)],
+          colors: [
+            Color(int.parse(baseColor)),
+            Color(int.parse(baseColor)).withValues(alpha: 0.8),
+          ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -199,11 +218,19 @@ class _ConfirmedMeetingCard extends StatelessWidget {
               children: [
                 Text(
                   DateFormat('MMM').format(date).toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   DateFormat('dd').format(date),
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -215,11 +242,18 @@ class _ConfirmedMeetingCard extends StatelessWidget {
               children: [
                 Text(
                   meeting.title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(
                   DateFormat('EEEE, HH:mm').format(date),
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -273,14 +307,20 @@ class _ProposalCard extends ConsumerWidget {
                   children: [
                     Text(
                       proposal.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                     if (proposal.description.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4.0),
                         child: Text(
                           proposal.description,
-                          style: const TextStyle(color: Colors.black54, fontSize: 13),
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                   ],
@@ -288,13 +328,26 @@ class _ProposalCard extends ConsumerWidget {
               ),
               if (isOwner)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                  onPressed: () => ref.read(meetingRepositoryProvider).deleteProposal(proposal.groupId, proposal.id),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.redAccent,
+                    size: 20,
+                  ),
+                  onPressed: () => ref
+                      .read(meetingRepositoryProvider)
+                      .deleteProposal(proposal.groupId, proposal.id),
                 ),
             ],
           ),
           const SizedBox(height: 20),
-          const Text('Pick your availability:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black38)),
+          const Text(
+            'Pick your availability:',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black38,
+            ),
+          ),
           const SizedBox(height: 8),
           ...List.generate(proposal.proposedDates.length, (index) {
             final date = proposal.proposedDates[index];
@@ -305,32 +358,47 @@ class _ProposalCard extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.15) : Colors.grey[50],
+                  color: hasVoted
+                      ? Color(int.parse(baseColor)).withValues(alpha: 0.15)
+                      : Colors.grey[50],
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: hasVoted ? Color(int.parse(baseColor)).withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.03),
+                    color: hasVoted
+                        ? Color(int.parse(baseColor)).withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.03),
                   ),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => ref.read(meetingRepositoryProvider).voteForDate(
-                          proposal.groupId,
-                          proposal.id,
-                          index,
-                          currentUserId,
-                        ),
+                        onTap: () => ref
+                            .read(meetingRepositoryProvider)
+                            .voteForDate(
+                              proposal.groupId,
+                              proposal.id,
+                              index,
+                              currentUserId,
+                            ),
                         borderRadius: isOwner
-                            ? const BorderRadius.horizontal(left: Radius.circular(11))
+                            ? const BorderRadius.horizontal(
+                                left: Radius.circular(11),
+                              )
                             : BorderRadius.circular(11),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
                           child: Row(
                             children: [
                               Icon(
-                                hasVoted ? Icons.check_circle : Icons.circle_outlined,
-                                color: hasVoted ? Color(int.parse(baseColor)) : Colors.black12,
+                                hasVoted
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                color: hasVoted
+                                    ? Color(int.parse(baseColor))
+                                    : Colors.black12,
                                 size: 20,
                               ),
                               const SizedBox(width: 12),
@@ -338,20 +406,30 @@ class _ProposalCard extends ConsumerWidget {
                                 child: Text(
                                   DateFormat('EEE, MMM d • HH:mm').format(date),
                                   style: TextStyle(
-                                    color: hasVoted ? Color(int.parse(baseColor)) : Colors.black87,
-                                    fontWeight: hasVoted ? FontWeight.bold : FontWeight.normal,
+                                    color: hasVoted
+                                        ? Color(int.parse(baseColor))
+                                        : Colors.black87,
+                                    fontWeight: hasVoted
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
                                   '${votes.length} votes',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -363,9 +441,14 @@ class _ProposalCard extends ConsumerWidget {
                       Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: IconButton(
-                          icon: Icon(Icons.stars, color: Color(int.parse(baseColor)), size: 24),
+                          icon: Icon(
+                            Icons.stars,
+                            color: Color(int.parse(baseColor)),
+                            size: 24,
+                          ),
                           tooltip: 'Confirm this date',
-                          onPressed: () => _confirmMeeting(context, ref, proposal, date),
+                          onPressed: () =>
+                              _confirmMeeting(context, ref, proposal, date),
                         ),
                       ),
                   ],
@@ -378,17 +461,30 @@ class _ProposalCard extends ConsumerWidget {
     );
   }
 
-  void _confirmMeeting(BuildContext context, WidgetRef ref, dynamic proposal, DateTime date) async {
+  void _confirmMeeting(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic proposal,
+    DateTime date,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Date?'),
-        content: Text('Do you want to set ${DateFormat('MMM d, HH:mm').format(date)} as the final date for "${proposal.title}"?'),
+        content: Text(
+          'Do you want to set ${DateFormat('MMM d, HH:mm').format(date)} as the final date for "${proposal.title}"?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Color(int.parse(baseColor)), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(int.parse(baseColor)),
+              foregroundColor: Colors.white,
+            ),
             child: const Text('CONFIRM DATE'),
           ),
         ],
@@ -396,7 +492,9 @@ class _ProposalCard extends ConsumerWidget {
     );
 
     if (confirm == true) {
-      await ref.read(meetingRepositoryProvider).confirmDate(proposal.groupId, proposal.id, date);
+      await ref
+          .read(meetingRepositoryProvider)
+          .confirmDate(proposal.groupId, proposal.id, date);
     }
   }
 }

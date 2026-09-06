@@ -76,13 +76,13 @@ class _ChatViewState extends ConsumerState<ChatView> {
         final isDesktop = constraints.maxWidth >= 800;
 
         return ColoredBox(
-          color: const Color(0xFFF4F6F3),
+          color: Colors.transparent,
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1080),
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAF8),
+                  color: const Color(0xEAF9FAF8),
                   border: isDesktop
                       ? const Border.symmetric(
                           vertical: BorderSide(color: Color(0xFFE1E7E1)),

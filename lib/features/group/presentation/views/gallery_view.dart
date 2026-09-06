@@ -25,17 +25,22 @@ class GalleryView extends ConsumerWidget {
       next.whenOrNull(
         error: (err, stack) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Upload failed: $err'), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text('Upload failed: $err'),
+              backgroundColor: Colors.red,
+            ),
           );
         },
       );
     });
 
     return Container(
-      color: const Color(0xFFF5F5F5),
+      color: Colors.transparent,
       child: groupAsync.when(
         data: (group) {
-          if (group == null) return const Center(child: Text('Group not found'));
+          if (group == null) {
+            return const Center(child: Text('Group not found'));
+          }
           final baseColorVal = int.tryParse(group.baseColor) ?? 0xFF2E7D32;
           final baseColor = Color(baseColorVal);
 
@@ -55,7 +60,10 @@ class GalleryView extends ConsumerWidget {
                         await Future.delayed(const Duration(milliseconds: 500));
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0,
+                          vertical: 12.0,
+                        ),
                         child: MasonryGridView.count(
                           physics: const AlwaysScrollableScrollPhysics(),
                           crossAxisCount: 2,
@@ -64,7 +72,8 @@ class GalleryView extends ConsumerWidget {
                           itemCount: items.length,
                           itemBuilder: (context, index) {
                             final item = items[index];
-                            final isUploader = item.uploaderId == currentUser?.uid;
+                            final isUploader =
+                                item.uploaderId == currentUser?.uid;
                             final canDelete = isOwner || isUploader;
 
                             return _buildGalleryCard(
@@ -83,9 +92,17 @@ class GalleryView extends ConsumerWidget {
                     bottom: 140,
                     right: 16,
                     child: FloatingActionButton.extended(
-                      onPressed: () => _showUploadSheet(context, ref, baseColor, group.fontFamily),
+                      onPressed: () => _showUploadSheet(
+                        context,
+                        ref,
+                        baseColor,
+                        group.fontFamily,
+                      ),
                       backgroundColor: baseColor,
-                      icon: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white),
+                      icon: const Icon(
+                        Icons.add_photo_alternate_rounded,
+                        color: Colors.white,
+                      ),
                       label: Text(
                         'ADD PHOTO',
                         style: GoogleFonts.getFont(
@@ -100,23 +117,34 @@ class GalleryView extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Center(child: Text('Error loading gallery: $err')),
+            error: (err, stack) =>
+                Center(child: Text('Error loading gallery: $err')),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => const Center(child: Text('Error loading group context')),
+        error: (err, stack) =>
+            const Center(child: Text('Error loading group context')),
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, WidgetRef ref, Color baseColor, String? fontFamily) {
+  Widget _buildEmptyState(
+    BuildContext context,
+    WidgetRef ref,
+    Color baseColor,
+    String? fontFamily,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.photo_library_outlined, size: 80, color: Colors.grey[400]),
+            Icon(
+              Icons.photo_library_outlined,
+              size: 80,
+              color: Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
               'No photos yet',
@@ -135,13 +163,25 @@ class GalleryView extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => _showUploadSheet(context, ref, baseColor, fontFamily),
+              onPressed: () =>
+                  _showUploadSheet(context, ref, baseColor, fontFamily),
               icon: const Icon(Icons.add_a_photo, color: Colors.white),
-              label: const Text('Upload Photo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              label: const Text(
+                'Upload Photo',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: baseColor,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -203,15 +243,26 @@ class GalleryView extends ConsumerWidget {
                     ),
                   ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(10, item.caption.isNotEmpty ? 0 : 8, 10, 8),
+                  padding: EdgeInsets.fromLTRB(
+                    10,
+                    item.caption.isNotEmpty ? 0 : 8,
+                    10,
+                    8,
+                  ),
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 8,
                         backgroundColor: baseColor.withValues(alpha: 0.1),
                         child: Text(
-                          item.uploaderName.isNotEmpty ? item.uploaderName[0].toUpperCase() : 'M',
-                          style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: baseColor),
+                          item.uploaderName.isNotEmpty
+                              ? item.uploaderName[0].toUpperCase()
+                              : 'M',
+                          style: TextStyle(
+                            fontSize: 7,
+                            fontWeight: FontWeight.bold,
+                            color: baseColor,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -220,7 +271,10 @@ class GalleryView extends ConsumerWidget {
                           item.uploaderName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ),
                     ],
@@ -240,7 +294,11 @@ class GalleryView extends ConsumerWidget {
                       color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.delete, color: Colors.white, size: 16),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ),
                 ),
               ),
@@ -250,7 +308,12 @@ class GalleryView extends ConsumerWidget {
     );
   }
 
-  void _openFullScreenView(BuildContext context, GalleryItem item, bool canDelete, WidgetRef ref) {
+  void _openFullScreenView(
+    BuildContext context,
+    GalleryItem item,
+    bool canDelete,
+    WidgetRef ref,
+  ) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.9),
@@ -266,7 +329,11 @@ class GalleryView extends ConsumerWidget {
           actions: [
             if (canDelete)
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 26),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                  size: 26,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                   _confirmDelete(context, ref, item);
@@ -282,10 +349,7 @@ class GalleryView extends ConsumerWidget {
                   minScale: 0.5,
                   maxScale: 3.0,
                   child: Center(
-                    child: Image.network(
-                      item.imageUrl,
-                      fit: BoxFit.contain,
-                    ),
+                    child: Image.network(item.imageUrl, fit: BoxFit.contain),
                   ),
                 ),
               ),
@@ -294,7 +358,9 @@ class GalleryView extends ConsumerWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.6),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -302,19 +368,31 @@ class GalleryView extends ConsumerWidget {
                   children: [
                     Text(
                       item.caption.isNotEmpty ? item.caption : 'No caption',
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         Text(
                           'Shared by ${item.uploaderName}',
-                          style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 13,
+                          ),
                         ),
                         const Spacer(),
                         Text(
-                          DateFormat('yyyy-MM-dd HH:mm').format(DateTime.fromMillisecondsSinceEpoch(item.createdAt)),
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                          DateFormat('yyyy-MM-dd HH:mm').format(
+                            DateTime.fromMillisecondsSinceEpoch(item.createdAt),
+                          ),
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -328,7 +406,12 @@ class GalleryView extends ConsumerWidget {
     );
   }
 
-  void _showUploadSheet(BuildContext context, WidgetRef ref, Color baseColor, String? fontFamily) {
+  void _showUploadSheet(
+    BuildContext context,
+    WidgetRef ref,
+    Color baseColor,
+    String? fontFamily,
+  ) {
     Uint8List? selectedImageBytes;
     String? selectedFileName;
     final captionController = TextEditingController();
@@ -344,7 +427,10 @@ class GalleryView extends ConsumerWidget {
 
           Future<void> pickPhoto() async {
             final picker = ImagePicker();
-            final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+            final pickedFile = await picker.pickImage(
+              source: ImageSource.gallery,
+              imageQuality: 70,
+            );
             if (pickedFile != null) {
               final bytes = await pickedFile.readAsBytes();
               setModalState(() {
@@ -355,7 +441,9 @@ class GalleryView extends ConsumerWidget {
           }
 
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -393,7 +481,10 @@ class GalleryView extends ConsumerWidget {
                                   Positioned.fill(
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
-                                      child: Image.memory(selectedImageBytes!, fit: BoxFit.cover),
+                                      child: Image.memory(
+                                        selectedImageBytes!,
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
                                   Positioned(
@@ -408,8 +499,15 @@ class GalleryView extends ConsumerWidget {
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -418,9 +516,19 @@ class GalleryView extends ConsumerWidget {
                             : Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey.shade500),
+                                  Icon(
+                                    Icons.add_a_photo_outlined,
+                                    size: 40,
+                                    color: Colors.grey.shade500,
+                                  ),
                                   const SizedBox(height: 8),
-                                  Text('Tap to select photo', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                  Text(
+                                    'Tap to select photo',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ],
                               ),
                       ),
@@ -432,25 +540,34 @@ class GalleryView extends ConsumerWidget {
                       decoration: InputDecoration(
                         labelText: 'Caption / Description',
                         labelStyle: TextStyle(color: Colors.grey.shade600),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: baseColor, width: 2),
                         ),
                       ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Please enter a caption' : null,
+                      validator: (v) => v == null || v.trim().isEmpty
+                          ? 'Please enter a caption'
+                          : null,
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: isUploading || selectedImageBytes == null
                           ? null
                           : () async {
-                              if (formKey.currentState!.validate() && selectedImageBytes != null) {
+                              if (formKey.currentState!.validate() &&
+                                  selectedImageBytes != null) {
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Uploading photo...')),
+                                  const SnackBar(
+                                    content: Text('Uploading photo...'),
+                                  ),
                                 );
-                                await ref.read(galleryControllerProvider.notifier).uploadPhoto(
+                                await ref
+                                    .read(galleryControllerProvider.notifier)
+                                    .uploadPhoto(
                                       groupId: groupId,
                                       bytes: selectedImageBytes!,
                                       fileName: selectedFileName ?? 'image.jpg',
@@ -461,17 +578,26 @@ class GalleryView extends ConsumerWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: baseColor,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: isUploading
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Text(
                               'UPLOAD',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 15,
+                              ),
                             ),
                     ),
                   ],
@@ -491,7 +617,9 @@ class GalleryView extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Photo?'),
-        content: const Text('Are you sure you want to permanently remove this photo from the gallery?'),
+        content: const Text(
+          'Are you sure you want to permanently remove this photo from the gallery?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -500,10 +628,9 @@ class GalleryView extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(galleryControllerProvider.notifier).deletePhoto(
-                    groupId: groupId,
-                    itemId: item.id,
-                  );
+              ref
+                  .read(galleryControllerProvider.notifier)
+                  .deletePhoto(groupId: groupId, itemId: item.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('DELETE'),

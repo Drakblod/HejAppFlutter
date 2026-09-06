@@ -23,7 +23,10 @@ class BulletinBoardView extends ConsumerWidget {
       next.whenOrNull(
         error: (err, stack) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not delete: $err'), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text('Could not delete: $err'),
+              backgroundColor: Colors.red,
+            ),
           );
         },
         data: (_) {
@@ -37,12 +40,14 @@ class BulletinBoardView extends ConsumerWidget {
     });
 
     return Container(
-      color: const Color(0xFFF0F0F0),
+      color: Colors.transparent,
       child: groupAsync.when(
         data: (group) => itemsAsync.when(
           data: (items) {
             if (items.isEmpty) {
-              return const Center(child: Text('No items on the board. Add one!'));
+              return const Center(
+                child: Text('No items on the board. Add one!'),
+              );
             }
 
             return RefreshIndicator(
@@ -52,7 +57,10 @@ class BulletinBoardView extends ConsumerWidget {
                 await Future.delayed(const Duration(milliseconds: 500));
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12,
+                ),
                 child: MasonryGridView.count(
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
@@ -61,19 +69,25 @@ class BulletinBoardView extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final item = items[index];
                     final isAuthor = item.senderId == currentUser?.uid;
-                    
+
                     // ONLY allow deleting yellow post-its, not chat messages from the board
-                    final canDelete = item.type == BoardItemType.postit && isAuthor;
-  
+                    final canDelete =
+                        item.type == BoardItemType.postit && isAuthor;
+
                     return PostItWidget(
                       item: item,
                       fontFamily: group?.fontFamily,
                       onDelete: canDelete
                           ? () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Deleting post-it...'), duration: Duration(seconds: 1)),
+                                const SnackBar(
+                                  content: Text('Deleting post-it...'),
+                                  duration: Duration(seconds: 1),
+                                ),
                               );
-                              ref.read(postItControllerProvider.notifier).deletePostIt(groupId, item.id);
+                              ref
+                                  .read(postItControllerProvider.notifier)
+                                  .deletePostIt(groupId, item.id);
                             }
                           : null,
                     );
@@ -86,7 +100,8 @@ class BulletinBoardView extends ConsumerWidget {
           error: (err, stack) => Center(child: Text('Error: $err')),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error loading group context')),
+        error: (err, stack) =>
+            Center(child: Text('Error loading group context')),
       ),
     );
   }

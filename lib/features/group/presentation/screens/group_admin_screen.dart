@@ -729,10 +729,12 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                     selected:
                         int.tryParse(_selectedBaseColor) ==
                         int.parse(color.value),
-                    onSelected: _isLoading ? null : (_) => setState(() {
-                      _selectedBaseColor = color.value;
-                      _dirty = true;
-                    }),
+                    onSelected: _isLoading
+                        ? null
+                        : (_) => setState(() {
+                            _selectedBaseColor = color.value;
+                            _dirty = true;
+                          }),
                   ),
               ],
             ),
@@ -754,10 +756,12 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                   ChoiceChip(
                     label: Text(font.name),
                     selected: _selectedFont == font.id,
-                    onSelected: _isLoading ? null : (_) => setState(() {
-                      _selectedFont = font.id;
-                      _dirty = true;
-                    }),
+                    onSelected: _isLoading
+                        ? null
+                        : (_) => setState(() {
+                            _selectedFont = font.id;
+                            _dirty = true;
+                          }),
                   ),
               ],
             ),
@@ -780,7 +784,10 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
               gradient: LinearGradient(
                 colors:
                     AppThemes.getGradient(group.theme) ??
-                    [Color(int.tryParse(_selectedBaseColor) ?? 0xFF2F7D32), Color(int.tryParse(_selectedBaseColor) ?? 0xFF2F7D32)],
+                    [
+                      Color(int.tryParse(_selectedBaseColor) ?? 0xFF2F7D32),
+                      Color(int.tryParse(_selectedBaseColor) ?? 0xFF2F7D32),
+                    ],
               ),
             ),
           ),
@@ -897,7 +904,9 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
               style: const TextStyle(color: _muted, fontSize: 12),
             ),
             value: group.enabledModules[_modules[i].id] ?? (i < 4),
-            onChanged: _isLoading ? null : (enabled) => _toggleModule(_modules[i].id, enabled),
+            onChanged: _isLoading
+                ? null
+                : (enabled) => _toggleModule(_modules[i].id, enabled),
           ),
           if (_labels.containsKey(_modules[i].id)) ...[
             const SizedBox(height: 10),

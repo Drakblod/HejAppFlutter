@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/res/app_themes.dart';
+import '../../../../core/widgets/living_background.dart';
 import '../../providers/board_providers.dart';
 import '../views/bulletin_board_view.dart';
 import '../widgets/create_postit_sheet.dart';
@@ -31,7 +32,8 @@ class GroupScreen extends ConsumerStatefulWidget {
   ConsumerState<GroupScreen> createState() => _GroupScreenState();
 }
 
-class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProviderStateMixin {
+class _GroupScreenState extends ConsumerState<GroupScreen>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   bool _showSplash = true;
   bool _splashGone = false;
@@ -72,7 +74,9 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
 
     return groupAsync.when(
       data: (group) {
-        if (group == null) return const Scaffold(body: Center(child: Text('Group not found')));
+        if (group == null) {
+          return const Scaffold(body: Center(child: Text('Group not found')));
+        }
 
         // Define all possible modules
         final List<Map<String, dynamic>> allModules = [
@@ -115,7 +119,9 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
         ];
 
         // Filter based on group settings
-        final activeModules = allModules.where((m) => group.enabledModules[m['id']] ?? false).toList();
+        final activeModules = allModules
+            .where((m) => group.enabledModules[m['id']] ?? false)
+            .toList();
 
         if (activeModules.isEmpty) {
           return Scaffold(
@@ -133,15 +139,26 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.widgets_outlined, size: 56, color: Color(0xFF5F7465)),
+                    const Icon(
+                      Icons.widgets_outlined,
+                      size: 56,
+                      color: Color(0xFF5F7465),
+                    ),
                     const SizedBox(height: 18),
-                    Text('This space has no active modules', style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      'This space has no active modules',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 8),
-                    const Text('Enable at least one module in the space settings.'),
-                    if (group.ownerId == ref.watch(authRepositoryProvider).currentUser?.uid) ...[
+                    const Text(
+                      'Enable at least one module in the space settings.',
+                    ),
+                    if (group.ownerId ==
+                        ref.watch(authRepositoryProvider).currentUser?.uid) ...[
                       const SizedBox(height: 22),
                       FilledButton.icon(
-                        onPressed: () => context.push('/group/${widget.groupId}/admin'),
+                        onPressed: () =>
+                            context.push('/group/${widget.groupId}/admin'),
                         icon: const Icon(Icons.settings_outlined),
                         label: const Text('Open settings'),
                       ),
@@ -159,66 +176,80 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
         }
 
         final isDesktop = MediaQuery.sizeOf(context).width >= 900;
-        final workspace = Stack(
-          children: [
-            Column(
-              children: [
-                _buildHeader(group),
-                Expanded(
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: activeModules.map<Widget>((m) => m['view'] as Widget).toList(),
+        final workspace = LivingBackground(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildHeader(group),
+                  Expanded(
+                    child: IndexedStack(
+                      index: _currentIndex,
+                      children: activeModules
+                          .map<Widget>((m) => m['view'] as Widget)
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+              if (!isDesktop)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildBottomNav(group, activeModules),
+                ),
+              if (activeModules[_currentIndex]['id'] == 'board')
+                Positioned(
+                  bottom: isDesktop
+                      ? 28
+                      : 100 + MediaQuery.of(context).padding.bottom,
+                  right: isDesktop ? 28 : 16,
+                  child: _buildFAB(group),
+                ),
+              if (!_splashGone)
+                IgnorePointer(
+                  ignoring: !_showSplash,
+                  child: AnimatedOpacity(
+                    opacity: _showSplash ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeInOut,
+                    onEnd: () => setState(() => _splashGone = true),
+                    child: _buildSplashLayer(group),
                   ),
                 ),
-              ],
-            ),
-            if (!isDesktop)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: _buildBottomNav(group, activeModules),
-              ),
-            if (activeModules[_currentIndex]['id'] == 'board')
-              Positioned(
-                bottom: isDesktop ? 28 : 100 + MediaQuery.of(context).padding.bottom,
-                right: isDesktop ? 28 : 16,
-                child: _buildFAB(group),
-              ),
-            if (!_splashGone)
-              IgnorePointer(
-                ignoring: !_showSplash,
-                child: AnimatedOpacity(
-                  opacity: _showSplash ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeInOut,
-                  onEnd: () => setState(() => _splashGone = true),
-                  child: _buildSplashLayer(group),
-                ),
-              ),
-          ],
+            ],
+          ),
         );
 
         return Scaffold(
           extendBody: true,
-          backgroundColor: const Color(0xFFF5F5F5),
+          backgroundColor: Colors.transparent,
           body: isDesktop
               ? Row(
                   children: [
                     _buildDesktopSidebar(group, activeModules),
-                    const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFE2E8E2)),
+                    const VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      color: Color(0xFFE2E8E2),
+                    ),
                     Expanded(child: workspace),
                   ],
                 )
               : workspace,
         );
       },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
     );
   }
 
-  Widget _buildDesktopSidebar(dynamic group, List<Map<String, dynamic>> activeModules) {
+  Widget _buildDesktopSidebar(
+    dynamic group,
+    List<Map<String, dynamic>> activeModules,
+  ) {
     return Container(
       width: 246,
       color: const Color(0xFF111813),
@@ -238,12 +269,20 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                       color: Color(int.parse(group.baseColor)),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.chat_bubble_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 11),
                   const Text(
                     'Hej',
-                    style: TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 23,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
@@ -270,13 +309,18 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                   final module = activeModules[index];
                   final selected = index == _currentIndex;
                   return Material(
-                    color: selected ? Colors.white.withValues(alpha: 0.11) : Colors.transparent,
+                    color: selected
+                        ? Colors.white.withValues(alpha: 0.11)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                     child: InkWell(
                       onTap: () => setState(() => _currentIndex = index),
                       borderRadius: BorderRadius.circular(14),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -290,8 +334,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                                 (module['label'] as String).toLowerCase(),
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: selected ? Colors.white : Colors.white60,
-                                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                  color: selected
+                                      ? Colors.white
+                                      : Colors.white60,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -299,7 +347,10 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                               Container(
                                 width: 6,
                                 height: 6,
-                                decoration: const BoxDecoration(color: Color(0xFFD8F3DC), shape: BoxShape.circle),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFD8F3DC),
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                           ],
                         ),
@@ -315,7 +366,10 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white60,
                 alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
               ),
               icon: const Icon(Icons.grid_view_rounded, size: 19),
               label: const Text('All spaces'),
@@ -327,12 +381,18 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
   }
 
   Widget _buildBottomNav(group, List<Map<String, dynamic>> activeModules) {
-    final activeProposalsCount = ref.watch(activeProposalsProvider(widget.groupId)).value?.length ?? 0;
+    final activeProposalsCount =
+        ref.watch(activeProposalsProvider(widget.groupId)).value?.length ?? 0;
 
     return SafeArea(
       bottom: true,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(24, 0, 24, 16), // Reduced constant margin since SafeArea adds the rest
+        margin: const EdgeInsets.fromLTRB(
+          24,
+          0,
+          24,
+          16,
+        ), // Reduced constant margin since SafeArea adds the rest
         height: 70,
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A1A).withValues(alpha: 0.85),
@@ -353,9 +413,9 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
             final m = entry.value;
             final isCalendar = m['id'] == 'calendar';
             return _buildNavItem(
-              idx, 
-              m['icon'] as IconData, 
-              m['label'] as String, 
+              idx,
+              m['icon'] as IconData,
+              m['label'] as String,
               group.fontFamily,
               badgeCount: isCalendar ? activeProposalsCount : 0,
             );
@@ -388,7 +448,11 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
     // 1. Fetch recent messages
     final messages = await ref.read(chatMessagesProvider(groupId).future);
     if (messages.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not enough messages to analyze yet!')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Not enough messages to analyze yet!')),
+        );
+      }
       return;
     }
 
@@ -402,8 +466,10 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
     }
 
     try {
-      await ref.read(geminiControllerProvider.notifier).extractFromChat(groupId, messages);
-      
+      await ref
+          .read(geminiControllerProvider.notifier)
+          .extractFromChat(groupId, messages);
+
       if (mounted) Navigator.pop(context); // Pop loading
 
       // 3. Show suggestions
@@ -412,7 +478,11 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
         suggestions.whenData((list) {
           if (!mounted) return;
           if (list.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No new events or takeaways found.')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No new events or takeaways found.'),
+              ),
+            );
           } else {
             _showSuggestionsDialog(list, group);
           }
@@ -421,7 +491,9 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Pop loading
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('AI Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('AI Error: $e')));
       }
     }
   }
@@ -439,7 +511,10 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
             itemBuilder: (context, index) {
               final s = suggestions[index];
               return ListTile(
-                leading: const Icon(Icons.lightbulb_outline, color: Colors.amber),
+                leading: const Icon(
+                  Icons.lightbulb_outline,
+                  color: Colors.amber,
+                ),
                 title: Text(s.text),
                 subtitle: Text('Color: ${s.textColor}'),
               );
@@ -447,21 +522,31 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('DISCARD')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('DISCARD'),
+          ),
           ElevatedButton(
             onPressed: () async {
               final navigator = Navigator.of(context);
               final messenger = ScaffoldMessenger.of(context);
-              
-              await ref.read(postItControllerProvider.notifier).saveMultiplePostIts(suggestions);
-              
+
+              await ref
+                  .read(postItControllerProvider.notifier)
+                  .saveMultiplePostIts(suggestions);
+
               if (mounted) {
                 navigator.pop();
-                messenger.showSnackBar(const SnackBar(content: Text('Added to Board!')));
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Added to Board!')),
+                );
                 setState(() => _currentIndex = 0); // Switch to board
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Color(int.parse(group.baseColor)), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(int.parse(group.baseColor)),
+              foregroundColor: Colors.white,
+            ),
             child: const Text('PIN ALL TO BOARD'),
           ),
         ],
@@ -471,177 +556,240 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
 
   Widget _buildHeader(group) {
     final gradient = AppThemes.getGradient(group.theme);
-    final hasBg = group.backgroundImage != null && group.backgroundImage!.isNotEmpty;
-    final activeProposals = ref.watch(activeProposalsProvider(widget.groupId)).value ?? [];
+    final hasBg =
+        group.backgroundImage != null && group.backgroundImage!.isNotEmpty;
+    final activeProposals =
+        ref.watch(activeProposalsProvider(widget.groupId)).value ?? [];
     final hasNew = activeProposals.isNotEmpty;
 
-    return Container(
+    return SizedBox(
+      height: 80,
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 140),
-      padding: const EdgeInsets.only(bottom: 16), // Added some bottom padding to clear the nav better
-      decoration: BoxDecoration(
-        gradient: gradient != null
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: gradient,
-              )
-            : null,
-        image: hasBg
-            ? DecorationImage(
-                image: NetworkImage(group.backgroundImage!),
-                fit: BoxFit.cover,
-              )
-            : null,
-        color: !hasBg && gradient == null ? Color(int.parse(group.baseColor)) : null,
-      ),
-      child: Stack(
-        children: [
-          // Dark Overlay for readability
-          if (hasBg || gradient != null)
-            Container(color: Colors.black26),
-          
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                    onPressed: () => context.go('/home'),
-                  ),
-                  Expanded(
+      child: ClipRect(
+        child: LivingBackground(
+          dark: true,
+          child: Container(
+            constraints: const BoxConstraints.tightFor(height: 80),
+            padding: EdgeInsets.zero,
+            decoration: BoxDecoration(
+              gradient: gradient != null
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: gradient,
+                    )
+                  : null,
+              image: hasBg
+                  ? DecorationImage(
+                      image: NetworkImage(group.backgroundImage!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              color: !hasBg && gradient == null ? Colors.transparent : null,
+            ),
+            child: Stack(
+              children: [
+                // Dark Overlay for readability
+                if (hasBg || gradient != null) Container(color: Colors.black26),
+
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Badge(
-                          isLabelVisible: hasNew,
-                          label: Text('${activeProposals.length}'),
-                          backgroundColor: Colors.redAccent,
-                          child: Hero(
-                            tag: 'group_icon_${group.id}',
-                            child: Text(
-                              group.icon,
-                              style: const TextStyle(fontSize: 24),
-                            ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
                           ),
+                          onPressed: () => context.go('/home'),
                         ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: InkWell(
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) => MembersListSheet(groupId: widget.groupId),
-                              );
-                            },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  group.name,
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: GoogleFonts.getFont(
-                                    group.fontFamily ?? 'Outfit',
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Text(
-                                  'View Members',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.person_add_outlined, color: Colors.white70),
-                    tooltip: 'Invite Members',
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Invite to Group'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('Share this code with your friends so they can join this group:'),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey[300]!),
+                              Badge(
+                                isLabelVisible: hasNew,
+                                label: Text('${activeProposals.length}'),
+                                backgroundColor: Colors.redAccent,
+                                child: Hero(
+                                  tag: 'group_icon_${group.id}',
+                                  child: Text(
+                                    group.icon,
+                                    style: const TextStyle(fontSize: 24),
+                                  ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: SelectableText(
-                                        widget.groupId,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: InkWell(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (context) => MembersListSheet(
+                                        groupId: widget.groupId,
                                       ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.content_copy, size: 20),
-                                      onPressed: () {
-                                        Clipboard.setData(ClipboardData(text: widget.groupId));
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID copied!')));
-                                      },
-                                    ),
-                                  ],
+                                    );
+                                  },
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        group.name,
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        style: GoogleFonts.getFont(
+                                          group.fontFamily ?? 'Outfit',
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        'View Members',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('CLOSE')),
-                          ],
                         ),
-                      );
-                    },
-                  ),
-                  if (group.ownerId == ref.watch(authRepositoryProvider).currentUser?.uid)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_currentIndex == 1) // Only show on Chat tab
-                          IconButton(
-                            icon: const Icon(Icons.auto_awesome, color: Colors.amberAccent),
-                            onPressed: () => _extractAI(group),
-                          ),
                         IconButton(
-                          icon: const Icon(Icons.settings_outlined, color: Colors.white),
-                          onPressed: () => context.push('/group/${widget.groupId}/admin'),
+                          icon: const Icon(
+                            Icons.person_add_outlined,
+                            color: Colors.white70,
+                          ),
+                          tooltip: 'Invite Members',
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Invite to Group'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      'Share this code with your friends so they can join this group:',
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[100],
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.grey[300]!,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: SelectableText(
+                                              widget.groupId,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: 'monospace',
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.content_copy,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              Clipboard.setData(
+                                                ClipboardData(
+                                                  text: widget.groupId,
+                                                ),
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('ID copied!'),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('CLOSE'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
+                        if (group.ownerId ==
+                            ref.watch(authRepositoryProvider).currentUser?.uid)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_currentIndex == 1) // Only show on Chat tab
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.auto_awesome,
+                                    color: Colors.amberAccent,
+                                  ),
+                                  onPressed: () => _extractAI(group),
+                                ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.settings_outlined,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () => context.push(
+                                  '/group/${widget.groupId}/admin',
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          const SizedBox(
+                            width: 48,
+                          ), // Spacer to keep title centered
                       ],
-                    )
-                  else
-                    const SizedBox(width: 48), // Spacer to keep title centered
-                ],
-              ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, String? fontFamily, {int badgeCount = 0}) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    String label,
+    String? fontFamily, {
+    int badgeCount = 0,
+  }) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
@@ -672,7 +820,8 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
   }
 
   Widget _buildSplashLayer(dynamic group) {
-    final hasBg = group.backgroundImage != null && group.backgroundImage!.isNotEmpty;
+    final hasBg =
+        group.backgroundImage != null && group.backgroundImage!.isNotEmpty;
     final gradient = AppThemes.getGradient(group.theme);
 
     return Stack(
@@ -699,7 +848,9 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
                             fit: BoxFit.cover,
                           )
                         : null,
-                    color: !hasBg && gradient == null ? Color(int.parse(group.baseColor)) : null,
+                    color: !hasBg && gradient == null
+                        ? Color(int.parse(group.baseColor))
+                        : null,
                   ),
                 ),
               );
@@ -711,9 +862,7 @@ class _GroupScreenState extends ConsumerState<GroupScreen> with SingleTickerProv
         Positioned.fill(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.35),
-            ),
+            child: Container(color: Colors.black.withValues(alpha: 0.35)),
           ),
         ),
 
