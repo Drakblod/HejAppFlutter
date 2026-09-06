@@ -1,5 +1,7 @@
 const admin = require('firebase-admin');
 const functions = require('firebase-functions/v1');
+const {onCall, HttpsError} = require('firebase-functions/v2/https');
+const {defineSecret} = require('firebase-functions/params');
 const OpenAI = require('openai');
 const crypto = require('crypto');
 
@@ -13,31 +15,32 @@ const backgroundStyles = new Set([
   'Pixel Art',
   'Abstract',
 ]);
+const openAiApiKey = defineSecret('OPENAI_API_KEY');
 
 /**
  * Generates a group background through OpenAI and stores it in our own bucket.
  * The OpenAI key is injected at deploy time as a Firebase secret, never sent to
  * the browser or bundled into the Flutter app.
  */
-exports.generateGroupBackground = functions
-  .runWith({
-    secrets: ['OPENAI_API_KEY'],
+exports.generateGroupBackground = onCall(
+  {
+    secrets: [openAiApiKey],
     timeoutSeconds: 120,
-    memory: '1GB',
-  })
-  .https.onCall(async (data, context) => {
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
+    memory: '1GiB',
+  },
+  async request => {
+    if (!request.auth) {
+      throw new HttpsError(
         'unauthenticated',
         'Sign in before generating a background.',
       );
     }
 
-    const groupId = typeof data?.groupId === 'string' ? data.groupId : '';
-    const prompt = typeof data?.prompt === 'string' ? data.prompt.trim() : '';
-    const style = typeof data?.style === 'string' ? data.style : 'Cinematic';
+    const groupId = typeof request.data?.groupId === 'string' ? request.data.groupId : '';
+    const prompt = typeof request.data?.prompt === 'string' ? request.data.prompt.trim() : '';
+    const style = typeof request.data?.style === 'string' ? request.data.style : 'Cinematic';
     if (!groupId || !prompt || prompt.length > 500) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'invalid-argument',
         'Provide a group and a background description of up to 500 characters.',
       );
@@ -45,8 +48,8 @@ exports.generateGroupBackground = functions
 
     const groupSnapshot = await admin.database().ref(`groups/${groupId}`).once('value');
     const group = groupSnapshot.val();
-    if (!group || group.ownerId !== context.auth.uid) {
-      throw new functions.https.HttpsError(
+    if (!group || group.ownerId !== request.auth.uid) {
+      throw new HttpsError(
         'permission-denied',
         'Only the space owner can change its background.',
       );
@@ -64,7 +67,7 @@ exports.generateGroupBackground = functions
 
     const base64 = image.data?.[0]?.b64_json;
     if (!base64) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         'internal',
         'OpenAI did not return an image.',
       );
@@ -84,7 +87,8 @@ exports.generateGroupBackground = functions
     return {
       imageUrl: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${downloadToken}`,
     };
-  });
+  },
+);
 
 exports.onMessageCreated = functions.database
   .ref('/messages/{groupId}/{messageId}')
