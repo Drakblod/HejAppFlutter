@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/services/database_repository.dart';
 import '../../../core/services/storage_repository.dart';
@@ -9,8 +10,37 @@ part 'chat_providers.g.dart';
 
 @riverpod
 Stream<List<ChatMessage>> chatMessages(Ref ref, String groupId) {
-  return ref.watch(databaseRepositoryProvider).streamMessages(groupId, limit: 100);
+  return ref
+      .watch(databaseRepositoryProvider)
+      .streamMessages(groupId, limit: 100);
 }
+
+class DirectChatParticipants {
+  final String currentUid;
+  final String otherUid;
+
+  const DirectChatParticipants({
+    required this.currentUid,
+    required this.otherUid,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    return other is DirectChatParticipants &&
+        other.currentUid == currentUid &&
+        other.otherUid == otherUid;
+  }
+
+  @override
+  int get hashCode => Object.hash(currentUid, otherUid);
+}
+
+final directChatMessagesProvider = StreamProvider.autoDispose
+    .family<List<ChatMessage>, DirectChatParticipants>((ref, participants) {
+      return ref
+          .watch(databaseRepositoryProvider)
+          .streamDirectMessages(participants.currentUid, participants.otherUid);
+    });
 
 @riverpod
 class ChatController extends _$ChatController {
@@ -54,7 +84,7 @@ class ChatController extends _$ChatController {
     // Note: To implement "True" optimistic UI, we would need a state-based collection
     // that combines the real stream with local "pending" messages.
     // Given the user wants "instantly", I'll be focusing on making the UI feel fast.
-    
+
     await ref.read(databaseRepositoryProvider).sendMessage(message);
   }
 
@@ -65,7 +95,7 @@ class ChatController extends _$ChatController {
     String? caption,
   }) async {
     state = const AsyncValue.loading();
-    
+
     final storage = ref.read(storageRepositoryProvider);
     final downloadUrl = await storage.uploadChatPhoto(
       groupId: groupId,

@@ -30,7 +30,7 @@ class DatabaseRepository {
   }
 
   // --- Groups ---
-  
+
   Stream<List<String>> streamUserGroupIds(String uid) {
     return _db.ref('userGroups/$uid').onValue.map((event) {
       final map = event.snapshot.value as Map<dynamic, dynamic>?;
@@ -89,27 +89,97 @@ class DatabaseRepository {
   // --- Messages ---
 
   Stream<List<ChatMessage>> streamMessages(String groupId, {int limit = 50}) {
-    return _db.ref('messages/$groupId')
+    return _db
+        .ref('messages/$groupId')
         .orderByKey()
         .limitToLast(limit)
         .onValue
         .map((event) {
-      final map = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (map == null) return [];
-      
-      final messages = <ChatMessage>[];
-      map.forEach((key, value) {
-        messages.add(ChatMessage.fromJson(key.toString(), value as Map<dynamic, dynamic>));
-      });
-      
-      // Sort by timestamp
-      messages.sort((a, b) => a.ts.compareTo(b.ts));
-      return messages;
-    });
+          final map = event.snapshot.value as Map<dynamic, dynamic>?;
+          if (map == null) return [];
+
+          final messages = <ChatMessage>[];
+          map.forEach((key, value) {
+            messages.add(
+              ChatMessage.fromJson(
+                key.toString(),
+                value as Map<dynamic, dynamic>,
+              ),
+            );
+          });
+
+          // Sort by timestamp
+          messages.sort((a, b) => a.ts.compareTo(b.ts));
+          return messages;
+        });
   }
 
   Future<void> sendMessage(ChatMessage message) async {
     await _db.ref('messages/${message.groupId}').push().set(message.toJson());
+  }
+
+  // --- Direct messages ---
+
+  String directConversationId(String firstUid, String secondUid) {
+    final participants = [firstUid, secondUid]..sort();
+    return '${participants[0]}__${participants[1]}';
+  }
+
+  Stream<List<ChatMessage>> streamDirectMessages(
+    String firstUid,
+    String secondUid, {
+    int limit = 100,
+  }) {
+    final conversationId = directConversationId(firstUid, secondUid);
+    return _db
+        .ref('directMessages/$conversationId')
+        .orderByKey()
+        .limitToLast(limit)
+        .onValue
+        .map((event) {
+          final map = event.snapshot.value as Map<dynamic, dynamic>?;
+          if (map == null) return [];
+
+          final messages = map.entries.map((entry) {
+            return ChatMessage.fromJson(
+              entry.key.toString(),
+              entry.value as Map<dynamic, dynamic>,
+            );
+          }).toList()..sort((a, b) => a.ts.compareTo(b.ts));
+
+          return messages;
+        });
+  }
+
+  Future<void> sendDirectMessage({
+    required String senderId,
+    required String recipientId,
+    required String senderName,
+    String? senderPhotoUrl,
+    required String text,
+  }) async {
+    final conversationId = directConversationId(senderId, recipientId);
+    final messageId = _db.ref('directMessages/$conversationId').push().key!;
+    final message = ChatMessage(
+      id: messageId,
+      groupId: conversationId,
+      senderId: senderId,
+      senderName: senderName,
+      senderPhotoUrl: senderPhotoUrl,
+      text: text,
+      ts: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    await _db.ref().update({
+      'directMessages/$conversationId/$messageId': message.toJson(),
+      'directConversations/$conversationId/participants/$senderId': true,
+      'directConversations/$conversationId/participants/$recipientId': true,
+      'directConversations/$conversationId/updatedAt': ServerValue.timestamp,
+      'directConversations/$conversationId/lastMessage': text,
+      'directConversations/$conversationId/lastSenderId': senderId,
+      'userDirectChats/$senderId/$conversationId': true,
+      'userDirectChats/$recipientId/$conversationId': true,
+    });
   }
 
   // --- Post-Its ---
@@ -118,21 +188,27 @@ class DatabaseRepository {
     return _db.ref('postits/$groupId').onValue.map((event) {
       final map = event.snapshot.value as Map<dynamic, dynamic>?;
       if (map == null) return [];
-      
+
       final items = <PostIt>[];
       map.forEach((key, value) {
-        items.add(PostIt.fromJson(key.toString(), value as Map<dynamic, dynamic>));
+        items.add(
+          PostIt.fromJson(key.toString(), value as Map<dynamic, dynamic>),
+        );
       });
       return items;
     });
   }
 
   Future<void> savePostIt(PostIt postIt) async {
-    await _db.ref('postits/${postIt.groupId}/${postIt.id}').set(postIt.toJson());
+    await _db
+        .ref('postits/${postIt.groupId}/${postIt.id}')
+        .set(postIt.toJson());
   }
 
   Future<void> deletePostIt(String groupId, String postItId) async {
-    print('[DELETE_DEBUG] Repository: Attempting to delete postits/$groupId/$postItId');
+    print(
+      '[DELETE_DEBUG] Repository: Attempting to delete postits/$groupId/$postItId',
+    );
     try {
       await _db.ref('postits/$groupId/$postItId').remove();
       print('[DELETE_DEBUG] Repository: Successfully removed.');
@@ -155,9 +231,11 @@ class DatabaseRepository {
 
       final items = <SharedFile>[];
       map.forEach((key, value) {
-        items.add(SharedFile.fromJson(key.toString(), value as Map<dynamic, dynamic>));
+        items.add(
+          SharedFile.fromJson(key.toString(), value as Map<dynamic, dynamic>),
+        );
       });
-      
+
       // Sort by timestamp descending
       items.sort((a, b) => b.ts.compareTo(a.ts));
       return items;
@@ -180,7 +258,7 @@ class DatabaseRepository {
       if (map != null) {
         return Stream.value(UserProfile.fromJson(uid, map));
       }
-      
+
       // Fallback: Check legacy path if profiles node is empty
       return _db.ref('users/$uid').onValue.map((legacyEvent) {
         final legacyMap = legacyEvent.snapshot.value as Map<dynamic, dynamic>?;
@@ -200,7 +278,10 @@ class DatabaseRepository {
     // 2. Fallback to legacy /users/ node
     final legacySnapshot = await _db.ref('users/$uid').get();
     if (legacySnapshot.exists) {
-      final profile = UserProfile.fromJson(uid, legacySnapshot.value as Map<dynamic, dynamic>);
+      final profile = UserProfile.fromJson(
+        uid,
+        legacySnapshot.value as Map<dynamic, dynamic>,
+      );
       // Self-heal: Move to /profiles/ so next time is faster
       await _db.ref('profiles/$uid').set(profile.toJson());
       return profile;
@@ -211,10 +292,10 @@ class DatabaseRepository {
 
   Future<void> updateProfile(UserProfile profile, {String? oldUsername}) async {
     final batch = <String, dynamic>{};
-    
+
     // 1. Update Profile
     batch['profiles/${profile.uid}'] = profile.toJson();
-    
+
     // 2. Handle Username Reservation if changed
     final newUsername = profile.username.trim().toLowerCase();
     if (oldUsername != null && oldUsername.toLowerCase() != newUsername) {
@@ -226,19 +307,22 @@ class DatabaseRepository {
       // First time setting
       batch['usernames/$newUsername'] = profile.uid;
     }
-    
+
     await _db.ref().update(batch);
   }
 
   Future<bool> isUsernameAvailable(String username) async {
     final cleaned = username.trim().toLowerCase();
     if (cleaned.isEmpty) return false;
-    
+
     final snapshot = await _db.ref('usernames/$cleaned').get();
     return !snapshot.exists;
   }
 
-  Future<void> updateGroupMeta(String groupId, Map<String, dynamic> data) async {
+  Future<void> updateGroupMeta(
+    String groupId,
+    Map<String, dynamic> data,
+  ) async {
     await _db.ref('groups/$groupId').update(data);
   }
 
@@ -246,9 +330,12 @@ class DatabaseRepository {
     return _db.ref('memberships/$groupId').onValue.map((event) {
       final map = event.snapshot.value as Map<dynamic, dynamic>?;
       if (map == null) return [];
-      
+
       return map.entries.map((e) {
-        return GroupMember.fromJson(e.key.toString(), e.value as Map<dynamic, dynamic>);
+        return GroupMember.fromJson(
+          e.key.toString(),
+          e.value as Map<dynamic, dynamic>,
+        );
       }).toList();
     });
   }
@@ -278,26 +365,23 @@ class DatabaseRepository {
   }
 
   Future<void> deleteGroup(String groupId) async {
-     // This is a heavy operation, would normally be a Cloud Function
-     // But for now, we'll just clear the main nodes
-     final batch = <String, dynamic>{};
-     batch['groups/$groupId'] = null;
-     batch['memberships/$groupId'] = null;
-     batch['messages/$groupId'] = null;
-     batch['postits/$groupId'] = null;
-     // Note: we can't easily clear userGroups/$userId/$groupId for all users without knowing them
-     // So we'd need to fetch them first or use a Cloud Function.
-     await _db.ref().update(batch);
+    // This is a heavy operation, would normally be a Cloud Function
+    // But for now, we'll just clear the main nodes
+    final batch = <String, dynamic>{};
+    batch['groups/$groupId'] = null;
+    batch['memberships/$groupId'] = null;
+    batch['messages/$groupId'] = null;
+    batch['postits/$groupId'] = null;
+    // Note: we can't easily clear userGroups/$userId/$groupId for all users without knowing them
+    // So we'd need to fetch them first or use a Cloud Function.
+    await _db.ref().update(batch);
   }
 
   Future<void> joinGroup(String groupId, String userId) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final batch = <String, dynamic>{};
 
-    batch['memberships/$groupId/$userId'] = {
-      'role': 'member',
-      'joinedAt': now,
-    };
+    batch['memberships/$groupId/$userId'] = {'role': 'member', 'joinedAt': now};
     batch['userGroups/$userId/$groupId'] = true;
 
     await _db.ref().update(batch);
@@ -324,10 +408,12 @@ class DatabaseRepository {
     return _db.ref('global_suggestions').onValue.map((event) {
       final map = event.snapshot.value as Map<dynamic, dynamic>?;
       if (map == null) return [];
-      
+
       final items = <Suggestion>[];
       map.forEach((key, value) {
-        items.add(Suggestion.fromJson(key.toString(), value as Map<dynamic, dynamic>));
+        items.add(
+          Suggestion.fromJson(key.toString(), value as Map<dynamic, dynamic>),
+        );
       });
       // Sort by createdAt descending
       items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -336,7 +422,9 @@ class DatabaseRepository {
   }
 
   Future<void> saveSuggestion(Suggestion suggestion) async {
-    await _db.ref('global_suggestions/${suggestion.id}').set(suggestion.toJson());
+    await _db
+        .ref('global_suggestions/${suggestion.id}')
+        .set(suggestion.toJson());
   }
 
   Future<void> updateSuggestionStatus(String id, String status) async {
@@ -357,10 +445,12 @@ class DatabaseRepository {
     return _db.ref('gallery/$groupId').onValue.map((event) {
       final map = event.snapshot.value as Map<dynamic, dynamic>?;
       if (map == null) return [];
-      
+
       final items = <GalleryItem>[];
       map.forEach((key, value) {
-        items.add(GalleryItem.fromJson(key.toString(), value as Map<dynamic, dynamic>));
+        items.add(
+          GalleryItem.fromJson(key.toString(), value as Map<dynamic, dynamic>),
+        );
       });
       // Sort by createdAt descending
       items.sort((a, b) => b.createdAt.compareTo(a.createdAt));

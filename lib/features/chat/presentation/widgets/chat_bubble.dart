@@ -7,8 +7,14 @@ import '../../../../features/profile/providers/profile_providers.dart';
 class ChatBubble extends ConsumerWidget {
   final ChatMessage message;
   final bool isMe;
+  final VoidCallback? onSenderTap;
 
-  const ChatBubble({super.key, required this.message, required this.isMe});
+  const ChatBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+    this.onSenderTap,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,7 +35,14 @@ class ChatBubble extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (!isMe) ...[
-                _buildAvatar(photoUrl, displayName),
+                Tooltip(
+                  message: 'Message $displayName privately',
+                  child: InkWell(
+                    onTap: onSenderTap,
+                    customBorder: const CircleBorder(),
+                    child: _buildAvatar(photoUrl, displayName),
+                  ),
+                ),
                 const SizedBox(width: 8),
               ],
               Flexible(
@@ -42,12 +55,22 @@ class ChatBubble extends ConsumerWidget {
                     if (!isMe)
                       Padding(
                         padding: const EdgeInsets.only(left: 4, bottom: 4),
-                        child: Text(
-                          displayName,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                            fontWeight: FontWeight.bold,
+                        child: InkWell(
+                          onTap: onSenderTap,
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 1,
+                            ),
+                            child: Text(
+                              displayName,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ),

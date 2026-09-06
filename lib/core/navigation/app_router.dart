@@ -6,6 +6,7 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/group/presentation/screens/group_screen.dart';
 import '../../features/group/presentation/screens/group_admin_screen.dart';
+import '../../features/chat/presentation/screens/direct_chat_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/suggestions_screen.dart';
 
@@ -19,7 +20,9 @@ GoRouter appRouter(Ref ref) {
     initialLocation: '/login',
     redirect: (context, state) {
       final isLoggedIn = authState.value != null;
-      final isAuthPage = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      final isAuthPage =
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register';
 
       if (!isLoggedIn && !isAuthPage) return '/login';
       if (isLoggedIn && isAuthPage) return '/home';
@@ -27,18 +30,12 @@ GoRouter appRouter(Ref ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/group/:groupId',
         builder: (context, state) {
@@ -49,6 +46,13 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/direct/:userId',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return DirectChatScreen(otherUserId: userId);
+        },
       ),
       GoRoute(
         path: '/suggestions',

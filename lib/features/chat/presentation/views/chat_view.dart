@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/models/chat_message.dart';
 import '../../../../features/auth/data/auth_repository.dart';
 import '../../providers/chat_providers.dart';
 import '../widgets/chat_bubble.dart';
@@ -22,6 +24,21 @@ class _ChatViewState extends ConsumerState<ChatView> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showPrivateChatPrompt(
+    BuildContext context,
+    ChatMessage message,
+  ) async {
+    final openChat = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PrivateChatPrompt(message: message),
+    );
+
+    if (openChat == true && context.mounted) {
+      context.push('/direct/${message.senderId}');
+    }
   }
 
   @override
@@ -98,6 +115,10 @@ class _ChatViewState extends ConsumerState<ChatView> {
                               return ChatBubble(
                                 message: msg,
                                 isMe: msg.senderId == currentUid,
+                                onSenderTap: msg.senderId == currentUid
+                                    ? null
+                                    : () =>
+                                          _showPrivateChatPrompt(context, msg),
                               );
                             },
                           );
@@ -128,6 +149,81 @@ class _ChatViewState extends ConsumerState<ChatView> {
           ),
         );
       },
+    );
+  }
+}
+
+class _PrivateChatPrompt extends StatelessWidget {
+  final ChatMessage message;
+
+  const _PrivateChatPrompt({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 24),
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: const Color(0xFFE4EEE5),
+              backgroundImage: message.senderPhotoUrl != null
+                  ? NetworkImage(message.senderPhotoUrl!)
+                  : null,
+              child: message.senderPhotoUrl == null
+                  ? Text(
+                      message.senderName.isEmpty
+                          ? '?'
+                          : message.senderName[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFF225C32),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 13),
+            Text(
+              message.senderName,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Start a private conversation outside the group chat.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 22),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.lock_outline_rounded),
+                label: const Text('Message privately'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
