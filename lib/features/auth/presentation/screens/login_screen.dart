@@ -1,8 +1,8 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_providers.dart';
+import '../../../../core/widgets/living_background.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -11,37 +11,12 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  late final AnimationController _backgroundController;
-
-  @override
-  void initState() {
-    super.initState();
-    _backgroundController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 18),
-    )..repeat();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
-      _backgroundController.stop();
-      _backgroundController.value = 0;
-    } else if (!_backgroundController.isAnimating) {
-      _backgroundController.repeat();
-    }
-  }
 
   @override
   void dispose() {
-    _backgroundController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -77,58 +52,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final isLoading = authState.isLoading;
 
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          RepaintBoundary(
-            child: AnimatedBuilder(
-              animation: _backgroundController,
-              builder: (context, _) => CustomPaint(
-                painter: _LivingBackgroundPainter(
-                  progress: _backgroundController.value,
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= 880;
-                return Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1040),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x26173F28),
-                              blurRadius: 54,
-                              offset: Offset(0, 22),
-                            ),
-                          ],
-                        ),
-                        child: isWide
-                            ? Row(
-                                children: [
-                                  const Expanded(child: _LoginStory()),
-                                  Expanded(
-                                    child: _buildForm(context, isLoading),
-                                  ),
-                                ],
-                              )
-                            : _buildForm(context, isLoading),
+      body: LivingBackground(
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 880;
+              return Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1040),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x26173F28),
+                            blurRadius: 54,
+                            offset: Offset(0, 22),
+                          ),
+                        ],
                       ),
+                      child: isWide
+                          ? Row(
+                              children: [
+                                const Expanded(child: _LoginStory()),
+                                Expanded(child: _buildForm(context, isLoading)),
+                              ],
+                            )
+                          : _buildForm(context, isLoading),
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
@@ -228,140 +188,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
       ),
     );
-  }
-}
-
-class _LivingBackgroundPainter extends CustomPainter {
-  final double progress;
-
-  const _LivingBackgroundPainter({required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bounds = Offset.zero & size;
-    canvas.drawRect(
-      bounds,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF1F6F1), Color(0xFFDFEBE1)],
-        ).createShader(bounds),
-    );
-
-    final angle = progress * math.pi * 2;
-    _drawGlow(
-      canvas,
-      Offset(
-        size.width * (0.12 + math.sin(angle) * 0.035),
-        size.height * (0.22 + math.cos(angle * 0.8) * 0.05),
-      ),
-      size.shortestSide * 0.34,
-      const Color(0xFF75B887),
-    );
-    _drawGlow(
-      canvas,
-      Offset(
-        size.width * (0.88 + math.cos(angle * 0.7) * 0.035),
-        size.height * (0.20 + math.sin(angle * 0.9) * 0.045),
-      ),
-      size.shortestSide * 0.27,
-      const Color(0xFFF0C987),
-    );
-    _drawGlow(
-      canvas,
-      Offset(
-        size.width * (0.80 + math.sin(angle * 0.65) * 0.045),
-        size.height * (0.84 + math.cos(angle * 0.75) * 0.04),
-      ),
-      size.shortestSide * 0.31,
-      const Color(0xFF8FB8B1),
-    );
-
-    _drawFloatingBubble(
-      canvas,
-      Offset(
-        size.width * (0.06 + math.sin(angle * 0.55) * 0.018),
-        size.height * (0.72 + math.cos(angle * 0.6) * 0.035),
-      ),
-      46,
-      angle,
-    );
-    _drawFloatingBubble(
-      canvas,
-      Offset(
-        size.width * (0.91 + math.cos(angle * 0.5) * 0.02),
-        size.height * (0.57 + math.sin(angle * 0.55) * 0.035),
-      ),
-      34,
-      -angle,
-    );
-  }
-
-  void _drawGlow(Canvas canvas, Offset center, double radius, Color color) {
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0)],
-        ).createShader(Rect.fromCircle(center: center, radius: radius)),
-    );
-  }
-
-  void _drawFloatingBubble(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    double rotation,
-  ) {
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(math.sin(rotation) * 0.08);
-
-    final bubbleRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset.zero,
-        width: radius * 2.15,
-        height: radius * 1.45,
-      ),
-      Radius.circular(radius * 0.44),
-    );
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = const Color(0xFF225C32).withValues(alpha: 0.12);
-    canvas.drawRRect(bubbleRect, paint);
-
-    final tail = Path()
-      ..moveTo(radius * 0.35, radius * 0.67)
-      ..quadraticBezierTo(
-        radius * 0.48,
-        radius * 0.92,
-        radius * 0.72,
-        radius * 0.94,
-      )
-      ..quadraticBezierTo(
-        radius * 0.55,
-        radius * 0.76,
-        radius * 0.52,
-        radius * 0.61,
-      );
-    canvas.drawPath(tail, paint);
-
-    for (var index = -1; index <= 1; index++) {
-      canvas.drawCircle(
-        Offset(index * radius * 0.36, 0),
-        radius * 0.075,
-        Paint()..color = const Color(0xFF225C32).withValues(alpha: 0.14),
-      );
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _LivingBackgroundPainter oldDelegate) {
-    return oldDelegate.progress != progress;
   }
 }
 
