@@ -579,18 +579,29 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
                       colors: gradient,
                     )
                   : null,
-              image: hasBg
-                  ? DecorationImage(
-                      image: NetworkImage(group.backgroundImage!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
               color: !hasBg && gradient == null ? Colors.transparent : null,
             ),
             child: Stack(
               children: [
-                // Dark Overlay for readability
-                if (hasBg || gradient != null) Container(color: Colors.black26),
+                if (hasBg)
+                  Positioned.fill(
+                    child: Image.network(
+                      group.backgroundImage!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                    ),
+                  ),
+                const Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0x22000000), Color(0x99000000)],
+                      ),
+                    ),
+                  ),
+                ),
 
                 SafeArea(
                   child: Padding(
