@@ -37,6 +37,16 @@ class _ChatViewState extends ConsumerState<ChatView> {
     );
 
     if (openChat == true && context.mounted) {
+      final currentUid = ref.read(authRepositoryProvider).currentUser?.uid;
+      if (currentUid != null) {
+        await ref
+            .read(databaseRepositoryProvider)
+            .startDirectConversation(
+              firstUid: currentUid,
+              secondUid: message.senderId,
+            );
+      }
+      if (!context.mounted) return;
       context.push('/direct/${message.senderId}');
     }
   }

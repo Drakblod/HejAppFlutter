@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/services/database_repository.dart';
 import '../../../core/services/storage_repository.dart';
 import '../../../core/models/chat_message.dart';
+import '../../../core/models/direct_conversation.dart';
 import '../../auth/data/auth_repository.dart';
 
 part 'chat_providers.g.dart';
@@ -40,6 +41,13 @@ final directChatMessagesProvider = StreamProvider.autoDispose
       return ref
           .watch(databaseRepositoryProvider)
           .streamDirectMessages(participants.currentUid, participants.otherUid);
+    });
+
+final directConversationsProvider = StreamProvider.autoDispose
+    .family<List<DirectConversation>, String>((ref, uid) {
+      return ref
+          .watch(databaseRepositoryProvider)
+          .streamDirectConversations(uid);
     });
 
 @riverpod

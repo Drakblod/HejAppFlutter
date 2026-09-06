@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import '../models/group.dart';
 import '../models/chat_message.dart';
+import '../models/direct_conversation.dart';
 import '../models/postit.dart';
 import '../models/user_profile.dart';
 import '../models/group_member.dart';
@@ -149,6 +150,43 @@ class DatabaseRepository {
 
           return messages;
         });
+  }
+
+  Stream<List<DirectConversation>> streamDirectConversations(String uid) {
+    return _db.ref('userDirectChats/$uid').onValue.asyncMap((event) async {
+      final conversations = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (conversations == null) return const <DirectConversation>[];
+
+      final entries = await Future.wait(
+        conversations.keys.map((conversationId) async {
+          final snapshot = await _db
+              .ref('directConversations/$conversationId')
+              .get();
+          final value = snapshot.value as Map<dynamic, dynamic>?;
+          return value == null
+              ? null
+              : DirectConversation.fromJson(conversationId.toString(), value);
+        }),
+      );
+
+      final result = entries.whereType<DirectConversation>().toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return result;
+    });
+  }
+
+  Future<void> startDirectConversation({
+    required String firstUid,
+    required String secondUid,
+  }) async {
+    final conversationId = directConversationId(firstUid, secondUid);
+    await _db.ref().update({
+      'directConversations/$conversationId/participants/$firstUid': true,
+      'directConversations/$conversationId/participants/$secondUid': true,
+      'directConversations/$conversationId/updatedAt': ServerValue.timestamp,
+      'userDirectChats/$firstUid/$conversationId': true,
+      'userDirectChats/$secondUid/$conversationId': true,
+    });
   }
 
   Future<void> sendDirectMessage({

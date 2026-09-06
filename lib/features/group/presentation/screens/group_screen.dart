@@ -11,6 +11,7 @@ import '../../providers/board_providers.dart';
 import '../views/bulletin_board_view.dart';
 import '../widgets/create_postit_sheet.dart';
 import '../../../chat/presentation/views/chat_view.dart';
+import '../../../chat/presentation/widgets/direct_chats_sheet.dart';
 import '../../../chat/providers/chat_providers.dart';
 import '../../../../features/auth/data/auth_repository.dart';
 import '../../../../core/models/postit.dart';
@@ -609,6 +610,14 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.forum_outlined,
+                            color: Colors.white70,
+                          ),
+                          tooltip: 'Private chats',
+                          onPressed: () => DirectChatsSheet.show(context),
+                        ),
                         IconButton(
                           icon: const Icon(
                             Icons.arrow_back_ios_new,
