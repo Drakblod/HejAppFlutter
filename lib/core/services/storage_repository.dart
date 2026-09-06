@@ -9,6 +9,25 @@ class StorageRepository {
 
   StorageRepository(this._storage);
 
+  String _guessContentType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'image/jpeg';
+    }
+  }
+
   Future<String> uploadChatPhoto({
     required String groupId,
     required Uint8List bytes,
@@ -17,7 +36,10 @@ class StorageRepository {
     final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
     final ref = _storage.ref().child('chat_photos').child(groupId).child(name);
     
-    final uploadTask = await ref.putData(bytes);
+    final uploadTask = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: _guessContentType(fileName)),
+    );
     return await uploadTask.ref.getDownloadURL();
   }
 
@@ -29,7 +51,10 @@ class StorageRepository {
     final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
     final ref = _storage.ref().child('profile_photos').child(uid).child(name);
     
-    final uploadTask = await ref.putData(bytes);
+    final uploadTask = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: _guessContentType(fileName)),
+    );
     return await uploadTask.ref.getDownloadURL();
   }
 
@@ -41,7 +66,10 @@ class StorageRepository {
     final name = 'bg_${DateTime.now().millisecondsSinceEpoch}_$fileName';
     final ref = _storage.ref().child('group_backgrounds').child(groupId).child(name);
     
-    final uploadTask = await ref.putData(bytes);
+    final uploadTask = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: _guessContentType(fileName)),
+    );
     return await uploadTask.ref.getDownloadURL();
   }
 
@@ -70,7 +98,10 @@ class StorageRepository {
     final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
     final ref = _storage.ref().child('gallery_photos').child(groupId).child(name);
     
-    final uploadTask = await ref.putData(bytes);
+    final uploadTask = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: _guessContentType(fileName)),
+    );
     return await uploadTask.ref.getDownloadURL();
   }
 }

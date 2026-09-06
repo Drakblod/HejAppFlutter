@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/models/chat_message.dart';
 import '../../../../features/profile/providers/profile_providers.dart';
 
@@ -105,11 +106,13 @@ class ChatBubble extends ConsumerWidget {
   }
 
   Widget _buildAvatar(String? photoUrl, String name) {
+    final hasPhoto = photoUrl != null && photoUrl.trim().isNotEmpty;
     return CircleAvatar(
       radius: 16,
       backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.1),
-      backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-      child: photoUrl == null
+      backgroundImage: hasPhoto ? NetworkImage(photoUrl) : null,
+      onBackgroundImageError: hasPhoto ? (_, _) {} : null,
+      child: !hasPhoto
           ? Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
               style: const TextStyle(
@@ -146,7 +149,8 @@ class ChatBubble extends ConsumerWidget {
             if (message.replyToId != null) _buildReplyPreview(),
 
             // Photo
-            if (message.photoUrl != null) _buildPhoto(),
+            if (message.photoUrl != null && message.photoUrl!.trim().isNotEmpty)
+              _buildPhoto(context),
 
             // Text
             if (message.text.isNotEmpty)
@@ -197,12 +201,142 @@ class ChatBubble extends ConsumerWidget {
     );
   }
 
-  Widget _buildPhoto() {
+  Widget _buildPhoto(BuildContext context) {
+    final photoUrl = message.photoUrl!.trim();
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(message.photoUrl!, fit: BoxFit.cover),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => _openFullScreenPhoto(context, photoUrl),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            constraints: const BoxConstraints(
+              maxHeight: 340,
+              maxWidth: 420,
+            ),
+            decoration: BoxDecoration(
+              color: isMe
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Stack(
+              children: [
+                Image.network(
+                  photoUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    final total = loadingProgress.expectedTotalBytes;
+                    final loaded = loadingProgress.cumulativeBytesLoaded;
+                    return Container(
+                      height: 180,
+                      width: double.infinity,
+                      color: isMe
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.black.withValues(alpha: 0.04),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: total != null && total > 0 ? loaded / total : null,
+                          strokeWidth: 2,
+                          color: isMe ? Colors.white70 : const Color(0xFF225C32),
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isMe
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : Colors.black.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.image_outlined,
+                          color: isMe ? Colors.white70 : Colors.black54,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'View image',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isMe ? Colors.white : const Color(0xFF225C32),
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openFullScreenPhoto(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (dialogContext) => Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            tooltip: 'Close',
+            icon: const Icon(Icons.close, color: Colors.white, size: 28),
+            onPressed: () => Navigator.pop(dialogContext),
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Open in new tab',
+              icon: const Icon(Icons.open_in_new_rounded, color: Colors.white),
+              onPressed: () async {
+                final uri = Uri.tryParse(url);
+                if (uri != null) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+          ],
+        ),
+        body: Center(
+          child: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4.0,
+            child: Image.network(
+              url,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.broken_image_outlined, color: Colors.white60, size: 64),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final uri = Uri.tryParse(url);
+                      if (uri != null) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Open image in browser'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
