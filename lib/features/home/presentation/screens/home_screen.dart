@@ -238,7 +238,6 @@ class _WelcomePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: const Color(0xFF173F28),
         borderRadius: BorderRadius.circular(28),
@@ -250,71 +249,81 @@ class _WelcomePanel extends StatelessWidget {
           ),
         ],
       ),
-      child: Wrap(
-        spacing: 24,
-        runSpacing: 24,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.spaceBetween,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 610),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: LivingBackground(
+          dark: true,
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Wrap(
+              spacing: 24,
+              runSpacing: 24,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: WrapAlignment.spaceBetween,
               children: [
-                Text(
-                  groupCount == 0
-                      ? 'Build your first space'
-                      : 'Everything your group needs',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 610),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        groupCount == 0
+                            ? 'Build your first space'
+                            : 'Everything your group needs',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -1,
+                            ),
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        'Bring conversations, plans, files and shared memories together — in a space that feels like yours.',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.76),
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 9),
-                Text(
-                  'Bring conversations, plans, files and shared memories together — in a space that feels like yours.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.76),
-                    height: 1.45,
-                  ),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: onJoin,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white38),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 17,
+                        ),
+                      ),
+                      icon: const Icon(Icons.add_link_rounded),
+                      label: const Text('Join'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: onCreate,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFD8F3DC),
+                        foregroundColor: const Color(0xFF173F28),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 17,
+                        ),
+                      ),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Create a space'),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onJoin,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white38),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 17,
-                  ),
-                ),
-                icon: const Icon(Icons.add_link_rounded),
-                label: const Text('Join'),
-              ),
-              FilledButton.icon(
-                onPressed: onCreate,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFD8F3DC),
-                  foregroundColor: const Color(0xFF173F28),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 17,
-                  ),
-                ),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Create a space'),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

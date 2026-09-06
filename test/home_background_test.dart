@@ -58,7 +58,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(seconds: 3));
-      expect(find.byType(LivingBackground), findsOneWidget);
+      expect(find.byType(LivingBackground), findsNWidgets(2));
       expect(find.text('Your spaces'), findsOneWidget);
       expect(find.text('Space 1'), findsOneWidget);
       expect(
@@ -71,6 +71,11 @@ void main() {
         await expectLater(
           find.byType(HomeScreen),
           matchesGoldenFile('../build/home-preview-$width.png'),
+        );
+        await tester.pump(const Duration(seconds: 4));
+        await expectLater(
+          find.byType(HomeScreen),
+          matchesGoldenFile('../build/home-preview-later-$width.png'),
         );
       }
       await tester.pumpWidget(const SizedBox.shrink());
