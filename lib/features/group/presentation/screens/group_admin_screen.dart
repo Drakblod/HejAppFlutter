@@ -1,562 +1,870 @@
-
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
-import '../../providers/board_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../core/models/group.dart';
+import '../../../../core/res/app_themes.dart';
 import '../../../../core/services/database_repository.dart';
 import '../../../../core/services/storage_repository.dart';
-import '../../../../core/res/app_themes.dart';
+import '../../providers/board_providers.dart';
 import '../widgets/ai_background_studio.dart';
+
+const _ink = Color(0xFF172B20);
+const _muted = Color(0xFF65756A);
+const _green = Color(0xFF225C32);
+const _border = Color(0xFFDDE6DF);
+const _sections = [
+  (label: 'General', icon: Icons.tune_rounded),
+  (label: 'Appearance', icon: Icons.palette_outlined),
+  (label: 'Modules', icon: Icons.dashboard_customize_outlined),
+  (label: 'Members', icon: Icons.people_outline_rounded),
+];
+const _modules = [
+  (
+    id: 'board',
+    title: 'Bulletin board',
+    description: 'Posts and updates for your group.',
+    icon: Icons.dashboard_outlined,
+  ),
+  (
+    id: 'chat',
+    title: 'Chat',
+    description: 'Keep the conversation going.',
+    icon: Icons.chat_bubble_outline_rounded,
+  ),
+  (
+    id: 'files',
+    title: 'Shared files',
+    description: 'Documents and resources in one place.',
+    icon: Icons.folder_outlined,
+  ),
+  (
+    id: 'calendar',
+    title: 'Gathering planner',
+    description: 'Find a time to meet.',
+    icon: Icons.event_outlined,
+  ),
+  (
+    id: 'ocr',
+    title: 'OCR sharing',
+    description: 'Scan and share text from images.',
+    icon: Icons.document_scanner_outlined,
+  ),
+  (
+    id: 'gallery',
+    title: 'Gallery',
+    description: 'Collect photos and shared memories.',
+    icon: Icons.photo_library_outlined,
+  ),
+];
+const _colors = [
+  (value: '0xFF2F7D32', label: 'Forest'),
+  (value: '0xFF0288D1', label: 'Ocean'),
+  (value: '0xFFE64A19', label: 'Sunset'),
+  (value: '0xFF512DA8', label: 'Plum'),
+  (value: '0xFF455A64', label: 'Slate'),
+];
 
 class GroupAdminScreen extends ConsumerStatefulWidget {
   final String groupId;
-
   const GroupAdminScreen({super.key, required this.groupId});
-
   @override
   ConsumerState<GroupAdminScreen> createState() => _GroupAdminScreenState();
 }
 
 class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _labels = {
+    'board': TextEditingController(),
+    'chat': TextEditingController(),
+    'files': TextEditingController(),
+    'ocr': TextEditingController(),
+    'gallery': TextEditingController(),
+  };
+  bool _initialized = false;
   bool _isLoading = false;
-  late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
-  late TextEditingController _boardLabelController;
-  late TextEditingController _chatLabelController;
-  late TextEditingController _filesLabelController;
-  late TextEditingController _ocrLabelController;
-  late TextEditingController _galleryLabelController;
+  bool _dirty = false;
+  int _section = 0;
+  String? _nameError;
   String? _selectedFont;
-  String? _selectedBaseColor;
+  String _selectedBaseColor = '0xFF2F7D32';
+
+  void _initializeForm(Group group) {
+    if (_initialized) return;
+    _nameController.text = group.name;
+    _descriptionController.text = group.description ?? '';
+    _labels['board']!.text = group.boardLabel ?? 'BOARD';
+    _labels['chat']!.text = group.chatLabel ?? 'CHAT';
+    _labels['files']!.text = group.filesLabel ?? 'FILES';
+    _labels['ocr']!.text = group.ocrLabel ?? 'OCR';
+    _labels['gallery']!.text = group.galleryLabel ?? 'GALLERY';
+    _selectedFont = group.fontFamily;
+    _selectedBaseColor = group.baseColor;
+    _initialized = true;
+  }
 
   @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController();
-    _descriptionController = TextEditingController();
-    _boardLabelController = TextEditingController();
-    _chatLabelController = TextEditingController();
-    _filesLabelController = TextEditingController();
-    _ocrLabelController = TextEditingController();
-    _galleryLabelController = TextEditingController();
-    
-    // Initialize with current meta
-    Future.microtask(() async {
-      final meta = await ref.read(databaseRepositoryProvider).getGroupMeta(widget.groupId);
-      if (meta != null) {
-        setState(() {
-          _nameController.text = meta.name;
-          _descriptionController.text = meta.description ?? '';
-          _boardLabelController.text = meta.boardLabel ?? 'BOARD';
-          _chatLabelController.text = meta.chatLabel ?? 'CHAT';
-          _filesLabelController.text = meta.filesLabel ?? 'FILES';
-          _ocrLabelController.text = meta.ocrLabel ?? 'OCR';
-          _galleryLabelController.text = meta.galleryLabel ?? 'GALLERY';
-          _selectedFont = meta.fontFamily;
-          _selectedBaseColor = meta.baseColor;
-        });
-      }
-    });
+  void didUpdateWidget(covariant GroupAdminScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupId != widget.groupId) {
+      _initialized = false;
+      _dirty = false;
+      _nameError = null;
+      _section = 0;
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _boardLabelController.dispose();
-    _chatLabelController.dispose();
-    _filesLabelController.dispose();
-    _ocrLabelController.dispose();
-    _galleryLabelController.dispose();
+    for (final controller in _labels.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _pickImage(bool isIcon) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (pickedFile == null) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final repo = ref.read(storageRepositoryProvider);
-      final db = ref.read(databaseRepositoryProvider);
-      
-      final bytes = await pickedFile.readAsBytes();
-      final fileName = pickedFile.name;
-      
-      String? url;
-      if (isIcon) {
-        url = await repo.uploadGroupBackground(groupId: widget.groupId, bytes: bytes, fileName: fileName);
-        await db.updateGroupMeta(widget.groupId, {'icon': url});
-      } else {
-        url = await repo.uploadGroupBackground(groupId: widget.groupId, bytes: bytes, fileName: fileName);
-        await db.updateGroupMeta(widget.groupId, {'backgroundImage': url});
-      }
-      
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Header background updated!')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  void _changed(String _) => setState(() {
+    _dirty = true;
+    _nameError = null;
+  });
+  void _notify(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
-  Future<void> _updateTheme(String themeId) async {
+  Future<bool> _perform(
+    Future<void> Function() action, {
+    String? success,
+  }) async {
+    if (_isLoading) return false;
     setState(() => _isLoading = true);
     try {
-      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
-        'theme': themeId,
-        'backgroundImage': null, // Clear custom BG when picking a theme
-      });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Theme updated to $themeId')));
+      await action();
+      if (success != null) _notify(success);
+      return true;
+    } catch (_) {
+      _notify('Could not save this change. Please try again.');
+      return false;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _saveChanges() async {
-    final newName = _nameController.text.trim();
-    if (newName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Group name cannot be empty'), backgroundColor: Colors.red),
-      );
+    if (_nameController.text.trim().isEmpty) {
+      setState(() {
+        _section = 0;
+        _nameError = 'Enter a group name.';
+      });
       return;
     }
+    final saved = await _perform(() async {
+      await ref
+          .read(databaseRepositoryProvider)
+          .updateGroupMeta(widget.groupId, {
+            'name': _nameController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            for (final entry in _labels.entries)
+              '${entry.key}Label': entry.value.text.trim(),
+            'fontFamily': _selectedFont,
+            'baseColor': _selectedBaseColor,
+          });
+    }, success: 'Group settings saved.');
+    if (mounted && saved) setState(() => _dirty = false);
+  }
 
-    setState(() => _isLoading = true);
+  Future<void> _pickImage() async {
+    await _perform(() async {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+      if (file == null || !mounted) return;
+      final storage = ref.read(storageRepositoryProvider);
+      final db = ref.read(databaseRepositoryProvider);
+      final url = await storage.uploadGroupBackground(
+        groupId: widget.groupId,
+        bytes: await file.readAsBytes(),
+        fileName: file.name,
+      );
+      await db.updateGroupMeta(widget.groupId, {'backgroundImage': url});
+      _notify('Header background updated.');
+    });
+  }
+
+  Future<void> _updateTheme(String themeId) async {
+    await _perform(
+      () => ref.read(databaseRepositoryProvider).updateGroupMeta(
+        widget.groupId,
+        {'theme': themeId, 'backgroundImage': null},
+      ),
+      success: 'Header background updated.',
+    );
+  }
+
+  Future<void> _toggleModule(String id, bool enabled) async {
+    // Update only this flag to preserve changes to other modules.
+    await _perform(
+      () => ref.read(databaseRepositoryProvider).updateGroupMeta(
+        widget.groupId,
+        {'enabledModules/$id': enabled},
+      ),
+    );
+  }
+
+  Future<void> _copyInvite() async {
     try {
-      await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
-        'name': newName,
-        'description': _descriptionController.text.trim(),
-        'boardLabel': _boardLabelController.text.trim(),
-        'chatLabel': _chatLabelController.text.trim(),
-        'filesLabel': _filesLabelController.text.trim(),
-        'ocrLabel': _ocrLabelController.text.trim(),
-        'galleryLabel': _galleryLabelController.text.trim(),
-        'fontFamily': _selectedFont,
-        'baseColor': _selectedBaseColor ?? '0xFF2F7D32',
-      });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Group settings saved!')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      await Clipboard.setData(ClipboardData(text: widget.groupId));
+      _notify('Invite code copied.');
+    } catch (_) {
+      _notify('Could not copy the code. You can select and copy it below.');
     }
   }
 
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    required String action,
+  }) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFB3261E),
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(action),
+            ),
+          ],
+        ),
+      ) ??
+      false;
 
-  void _onRemoveMember(String userId, String name) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Member?'),
-        content: Text('Are you sure you want to remove $name from the group?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true), 
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('REMOVE'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _isLoading = true);
-      try {
-        await ref.read(databaseRepositoryProvider).removeMember(widget.groupId, userId);
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+  Future<void> _onRemoveMember(String id, String name) async {
+    if (!await _confirm(
+          title: 'Remove member?',
+          message: 'Remove $name from this group?',
+          action: 'Remove member',
+        ) ||
+        !mounted) {
+      return;
     }
+    await _perform(
+      () =>
+          ref.read(databaseRepositoryProvider).removeMember(widget.groupId, id),
+      success: 'Member removed.',
+    );
   }
 
-  void _onDeleteGroup() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Group?', style: TextStyle(color: Colors.red)),
-        content: const Text('This action is permanent. All messages and posts will be lost.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true), 
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('DELETE PERMANENTLY'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _isLoading = true);
-      try {
-        await ref.read(databaseRepositoryProvider).deleteGroup(widget.groupId);
-        if (mounted) context.go('/home');
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+  Future<void> _onDeleteGroup() async {
+    if (!await _confirm(
+          title: 'Delete group?',
+          message:
+              'This permanently deletes the group and its messages and posts. This cannot be undone.',
+          action: 'Delete group',
+        ) ||
+        !mounted) {
+      return;
     }
+    final deleted = await _perform(
+      () => ref.read(databaseRepositoryProvider).deleteGroup(widget.groupId),
+    );
+    if (deleted && mounted) context.go('/home');
   }
 
   @override
   Widget build(BuildContext context) {
     final groupAsync = ref.watch(groupMetaProvider(widget.groupId));
-    final membersAsync = ref.watch(groupMembersProvider(widget.groupId));
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF2C2C2C),
-      appBar: AppBar(
-        title: const Text(
-          'Group Admin',
-          style: TextStyle(fontWeight: FontWeight.bold),
+    final theme = Theme.of(context);
+    // Explicit colors avoid white-on-white fields inherited from app themes.
+    final settingsTheme = theme.copyWith(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _green,
+        brightness: Brightness.light,
+      ),
+      textTheme: theme.textTheme.apply(bodyColor: _ink, displayColor: _ink),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFF8FAF8),
+        labelStyle: const TextStyle(color: _muted),
+        hintStyle: const TextStyle(color: _muted),
+        floatingLabelStyle: const TextStyle(color: _green),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 17,
         ),
-        backgroundColor: const Color(0xFF2C2C2C),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.pop(),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _border),
         ),
-        shape: const Border(
-          bottom: BorderSide(
-            color: Colors.white24,
-            width: 1,
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _green, width: 2),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF2C2C2C),
-              Color(0xFF1A1A1A),
-            ],
+    );
+    return Theme(
+      data: settingsTheme,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF3F6F3),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFF3F6F3),
+          foregroundColor: _ink,
+          surfaceTintColor: Colors.transparent,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 72,
+          title: const Text(
+            'Group settings',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 21),
+          ),
+          leading: IconButton(
+            tooltip: 'Back to group',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _isLoading ? null : () => context.pop(),
           ),
         ),
-        child: Stack(
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: _border)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Center(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1080),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _isLoading
+                            ? 'Saving…'
+                            : _dirty
+                            ? 'Unsaved changes'
+                            : 'Your group, your way.',
+                        style: const TextStyle(color: _muted, fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton.icon(
+                      onPressed:
+                          !_isLoading && groupAsync.value != null && _dirty
+                          ? _saveChanges
+                          : null,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check_rounded, size: 19),
+                      label: const Text('Save changes'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        body: Stack(
           children: [
-          groupAsync.when(
-            data: (group) {
-              if (group == null) return const Center(child: Text('Group not found'));
+            groupAsync.when(
+              data: (group) {
+                if (group == null) {
+                  return const Center(
+                    child: Text('This group could not be found.'),
+                  );
+                }
+                _initializeForm(group);
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 900;
+                    return SingleChildScrollView(
+                      key: const PageStorageKey('group-settings-scroll'),
+                      padding: EdgeInsets.fromLTRB(
+                        wide ? 32 : 16,
+                        12,
+                        wide ? 32 : 16,
+                        32,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1080),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _heading(group),
+                              const SizedBox(height: 28),
+                              if (wide)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: 208,
+                                      child: _navigation(vertical: true),
+                                    ),
+                                    const SizedBox(width: 28),
+                                    Expanded(child: _content(group)),
+                                  ],
+                                )
+                              else ...[
+                                _navigation(vertical: false),
+                                const SizedBox(height: 20),
+                                _content(group),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, _) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Could not load group settings.'),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: () =>
+                          ref.invalidate(groupMetaProvider(widget.groupId)),
+                      child: const Text('Try again'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_isLoading) ...[
+              const Positioned.fill(
+                child: AbsorbPointer(
+                  child: ColoredBox(color: Color(0x44FFFFFF)),
+                ),
+              ),
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+  Widget _heading(Group group) => Row(
+    children: [
+      Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: _green,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Icon(
+          Icons.settings_outlined,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      const SizedBox(width: 16),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              group.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.6,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Make this space feel like yours.',
+              style: TextStyle(color: _muted),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _navigation({required bool vertical}) {
+    final items = [
+      for (var i = 0; i < _sections.length; i++)
+        Semantics(
+          selected: _section == i,
+          child: TextButton.icon(
+            onPressed: _isLoading ? null : () => setState(() => _section = i),
+            style: TextButton.styleFrom(
+              alignment: Alignment.centerLeft,
+              backgroundColor: _section == i
+                  ? const Color(0xFFDFEDE1)
+                  : Colors.transparent,
+              foregroundColor: _section == i ? _green : _muted,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: Icon(_sections[i].icon, size: 20),
+            label: Text(
+              _sections[i].label,
+              style: TextStyle(
+                fontWeight: _section == i ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+    ];
+    return vertical
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...items.expand((item) => [item, const SizedBox(height: 6)]),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 24, 16, 0),
+                child: Text(
+                  'A space that feels like home.',
+                  style: TextStyle(color: _muted, height: 1.6, fontSize: 12),
+                ),
+              ),
+            ],
+          )
+        : Wrap(spacing: 4, runSpacing: 4, children: items);
+  }
+
+  Widget _content(Group group) => switch (_section) {
+    1 => _appearance(group),
+    2 => _moduleSettings(group),
+    3 => _members(),
+    _ => _general(),
+  };
+
+  Widget _general() => Column(
+    children: [
+      _SettingsCard(
+        icon: Icons.edit_outlined,
+        title: 'The basics',
+        subtitle: 'Give your group a name and a short introduction.',
+        child: Column(
+          children: [
+            TextField(
+              enabled: !_isLoading,
+              key: const ValueKey('group-name'),
+              controller: _nameController,
+              style: const TextStyle(color: _ink),
+              onChanged: _changed,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: 'Group name',
+                errorText: _nameError,
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              enabled: !_isLoading,
+              controller: _descriptionController,
+              style: const TextStyle(color: _ink),
+              onChanged: _changed,
+              minLines: 3,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'About this group',
+                hintText: 'What brings you together?',
+                alignLabelWithHint: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 20),
+      _SettingsCard(
+        icon: Icons.add_link_rounded,
+        title: 'Invite people',
+        subtitle:
+            'Share this code. New members can use “Join a space” to find your group.',
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEDF4ED),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Invite Section
-                    _buildSectionTitle('INVITE OTHERS'),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Group ID / Invite Code', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                                const SizedBox(height: 4),
-                                Text(
-                                  widget.groupId, 
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, fontFamily: 'monospace'),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.copy_rounded, color: Colors.blue, size: 20),
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: widget.groupId));
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invite code copied!')));
-                            },
-                          ),
-                        ],
+                    const Text(
+                      'INVITE CODE',
+                      style: TextStyle(
+                        color: _muted,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // General Info
-                    _buildSectionTitle('GENERAL INFO'),
-                    TextField(
-                      controller: _nameController,
-                      style: const TextStyle(color: Colors.white, fontSize: 18),
-                      decoration: const InputDecoration(
-                        labelText: 'Group Name',
-                        labelStyle: TextStyle(color: Colors.white60),
-                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _descriptionController,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Group Description / About',
-                        labelStyle: TextStyle(color: Colors.white60),
-                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Header Background Section
-                    _buildSectionTitle('HEADER BACKGROUND'),
-                    const Text('Choose a gradient preset:', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 50,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: AppThemes.presets.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 16),
-                        itemBuilder: (context, index) {
-                          final theme = AppThemes.presets[index];
-                          final isSelected = group.theme == theme['id'] && group.backgroundImage == null;
-                          return GestureDetector(
-                            onTap: () => _updateTheme(theme['id']),
-                            child: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(colors: theme['colors']),
-                                border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
-                              ),
-                              child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Upload Header Background', style: TextStyle(color: Colors.white)),
-                      subtitle: const Text('Choose a custom background image from your gallery', style: TextStyle(color: Colors.white60)),
-                      trailing: const Icon(Icons.file_upload_outlined, color: Colors.blue),
-                      onTap: () => _pickImage(false),
-                    ),
-                    const SizedBox(height: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('✨ AI Background Studio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (context) => AIBackgroundStudio(groupId: widget.groupId),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white.withValues(alpha: 0.05),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: const BorderSide(color: Colors.white10),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
-                                SizedBox(width: 12),
-                                Text(
-                                  'GENERATE AI BACKGROUND',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    
-
-                    
-                    // Module Visibility
-                    _buildSectionTitle('MANAGE MODULES'),
-                    _buildModuleToggle('Bulletin Board', 'board', group.enabledModules['board'] ?? true),
-                    _buildModuleToggle('Real-time Chat', 'chat', group.enabledModules['chat'] ?? true),
-                    _buildModuleToggle('Shared Files', 'files', group.enabledModules['files'] ?? true),
-                    _buildModuleToggle('Gathering Planner', 'calendar', group.enabledModules['calendar'] ?? true),
-                    _buildModuleToggle('OCR-delare', 'ocr', group.enabledModules['ocr'] ?? false),
-                    _buildModuleToggle('Gallery', 'gallery', group.enabledModules['gallery'] ?? false),
-                    const SizedBox(height: 32),
-
-                    // Custom Identity Section
-                    _buildSectionTitle('CUSTOM IDENTITY'),
-                    _buildIdentityField('Board Tab Name', _boardLabelController),
-                    const SizedBox(height: 16),
-                    _buildIdentityField('Chat Tab Name', _chatLabelController),
-                    const SizedBox(height: 16),
-                    _buildIdentityField('Files Tab Name', _filesLabelController),
-                    const SizedBox(height: 16),
-                    _buildIdentityField('OCR Tab Name', _ocrLabelController),
-                    const SizedBox(height: 16),
-                    _buildIdentityField('Gallery Tab Name', _galleryLabelController),
-                    const SizedBox(height: 24),
-                    const Text('Typography Style:', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _buildFontButton('Modern', null),
-                        const SizedBox(width: 8),
-                        _buildFontButton('Playful', 'Kenia'),
-                        const SizedBox(width: 8),
-                        _buildFontButton('Classic', 'Lora'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('Base Color:', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _buildColorSwatch('0xFF2F7D32'), // Hej Green
-                        const SizedBox(width: 8),
-                        _buildColorSwatch('0xFF0288D1'), // Ocean Blue
-                        const SizedBox(width: 8),
-                        _buildColorSwatch('0xFFE64A19'), // Sunset Orange
-                        const SizedBox(width: 8),
-                        _buildColorSwatch('0xFF512DA8'), // Royal Purple
-                        const SizedBox(width: 8),
-                        _buildColorSwatch('0xFF455A64'), // Slate Grey
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saveChanges,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('SAVE CHANGES'),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    
-                    // Members Section
-                    _buildSectionTitle('MEMBERS'),
-                    membersAsync.when(
-                      data: (members) => Column(
-                        children: members.map((m) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            backgroundImage: m.profile?.photoUrl != null ? NetworkImage(m.profile!.photoUrl!) : null,
-                            child: m.profile?.photoUrl == null ? const Icon(Icons.person) : null,
-                          ),
-                          title: Text(m.profile?.username ?? 'User', style: const TextStyle(color: Colors.white)),
-                          subtitle: Text(m.member.role, style: const TextStyle(color: Colors.white60)),
-                          trailing: m.member.role != 'owner' 
-                            ? IconButton(
-                                icon: const Icon(Icons.person_remove_outlined, color: Colors.redAccent),
-                                onPressed: () => _onRemoveMember(m.member.uid, m.profile?.username ?? 'User'),
-                              )
-                            : const Text('Owner', style: TextStyle(color: Colors.white24, fontSize: 12)),
-                        )).toList(),
-                      ),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Text('Error loading members: $e', style: const TextStyle(color: Colors.red)),
-                    ),
-
-                    const SizedBox(height: 48),
-                    
-                    // Danger Zone
-                    _buildSectionTitle('DANGER ZONE', color: Colors.redAccent),
                     const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: _onDeleteGroup,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('DELETE GROUP'),
+                    SelectableText(
+                      widget.groupId,
+                      style: const TextStyle(
+                        color: _ink,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 40),
                   ],
                 ),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Copy invite code',
+                onPressed: _copyInvite,
+                icon: const Icon(Icons.copy_rounded, color: _green, size: 21),
+              ),
+            ],
           ),
-          if (_isLoading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black45,
-                child: const Center(child: CircularProgressIndicator()),
+        ),
+      ),
+    ],
+  );
+
+  Widget _appearance(Group group) => Column(
+    children: [
+      _SettingsCard(
+        icon: Icons.landscape_outlined,
+        title: 'Header background',
+        subtitle:
+            'Set the mood for your group. Background changes are applied immediately.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _headerPreview(group),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final preset in AppThemes.presets) _preset(preset, group),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _pickImage,
+                  icon: const Icon(Icons.upload_rounded, size: 19),
+                  label: const Text('Upload image'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => AIBackgroundStudio(groupId: widget.groupId),
+                  ),
+                  icon: const Icon(Icons.auto_awesome_outlined, size: 19),
+                  label: const Text('AI background studio'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 20),
+      _SettingsCard(
+        icon: Icons.palette_outlined,
+        title: 'Group style',
+        subtitle: 'Choose a color and type style, then save your changes.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Accent color',
+              style: TextStyle(fontWeight: FontWeight.w600, color: _ink),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final color in _colors)
+                  ChoiceChip(
+                    label: Text(color.label),
+                    avatar: CircleAvatar(
+                      radius: 9,
+                      backgroundColor: Color(int.parse(color.value)),
+                    ),
+                    selected:
+                        int.tryParse(_selectedBaseColor) ==
+                        int.parse(color.value),
+                    onSelected: _isLoading ? null : (_) => setState(() {
+                      _selectedBaseColor = color.value;
+                      _dirty = true;
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Typography',
+              style: TextStyle(fontWeight: FontWeight.w600, color: _ink),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final font in [
+                  (name: 'Modern', id: null),
+                  (name: 'Playful', id: 'Kenia'),
+                  (name: 'Classic', id: 'Lora'),
+                ])
+                  ChoiceChip(
+                    label: Text(font.name),
+                    selected: _selectedFont == font.id,
+                    onSelected: _isLoading ? null : (_) => setState(() {
+                      _selectedFont = font.id;
+                      _dirty = true;
+                    }),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget _headerPreview(Group group) => ClipRRect(
+    borderRadius: BorderRadius.circular(16),
+    child: SizedBox(
+      height: 150,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors:
+                    AppThemes.getGradient(group.theme) ??
+                    [Color(int.tryParse(_selectedBaseColor) ?? 0xFF2F7D32), Color(int.tryParse(_selectedBaseColor) ?? 0xFF2F7D32)],
               ),
             ),
-        ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title, {Color color = Colors.white60}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color, letterSpacing: 1.1),
-      ),
-    );
-  }
-
-  Widget _buildIdentityField(String label, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(color: Colors.white, fontSize: 16),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white60),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      ),
-    );
-  }
-
-  Widget _buildFontButton(String name, String? fontId) {
-    final isSelected = _selectedFont == fontId;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedFont = fontId),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.blue : Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: isSelected ? Colors.blue : Colors.white24),
           ),
-          child: Text(
-            name,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white70,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          if (group.backgroundImage != null)
+            Image.network(
+              group.backgroundImage!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const Center(
+                child: Icon(Icons.broken_image_outlined, color: Colors.white54),
+              ),
+            ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Color(0x88000000)],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: Text(
+              _nameController.text.trim(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _preset(Map<String, dynamic> preset, Group group) {
+    final selected =
+        group.theme == preset['id'] && group.backgroundImage == null;
+    return Semantics(
+      selected: selected,
+      child: Tooltip(
+        message: preset['name'] as String,
+        child: InkWell(
+          onTap: _isLoading ? null : () => _updateTheme(preset['id'] as String),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 126,
+            height: 72,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: (preset['colors'] as List).cast<Color>(),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? _ink : Colors.transparent,
+                width: 3,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  selected ? Icons.check_circle : Icons.circle_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const Spacer(),
+                Text(
+                  preset['name'] as String,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -564,49 +872,219 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
     );
   }
 
-  Widget _buildColorSwatch(String hexColor) {
-    final isSelected = (_selectedBaseColor ?? '0xFF2F7D32') == hexColor;
-    final color = Color(int.parse(hexColor));
+  Widget _moduleSettings(Group group) => _SettingsCard(
+    icon: Icons.dashboard_customize_outlined,
+    title: 'Your group’s modules',
+    subtitle:
+        'Switch modules on or off instantly. Custom tab names are applied with Save changes.',
+    child: Column(
+      children: [
+        for (var i = 0; i < _modules.length; i++) ...[
+          if (i > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(height: 1, color: _border),
+            ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: Icon(_modules[i].icon, color: _green),
+            title: Text(
+              _modules[i].title,
+              style: const TextStyle(color: _ink, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              _modules[i].description,
+              style: const TextStyle(color: _muted, fontSize: 12),
+            ),
+            value: group.enabledModules[_modules[i].id] ?? (i < 4),
+            onChanged: _isLoading ? null : (enabled) => _toggleModule(_modules[i].id, enabled),
+          ),
+          if (_labels.containsKey(_modules[i].id)) ...[
+            const SizedBox(height: 10),
+            TextField(
+              enabled: !_isLoading,
+              controller: _labels[_modules[i].id],
+              style: const TextStyle(color: _ink),
+              onChanged: _changed,
+              decoration: InputDecoration(
+                labelText: '${_modules[i].title} tab name',
+              ),
+            ),
+          ],
+        ],
+      ],
+    ),
+  );
 
-    return GestureDetector(
-      onTap: () => setState(() => _selectedBaseColor = hexColor),
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
-          boxShadow: isSelected
-              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 2)]
-              : null,
-        ),
-        child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+  Widget _members() => Column(
+    children: [
+      _SettingsCard(
+        icon: Icons.people_outline_rounded,
+        title: 'Group members',
+        subtitle: 'See who is here and manage access to your group.',
+        child: ref
+            .watch(groupMembersProvider(widget.groupId))
+            .when(
+              data: (members) => members.isEmpty
+                  ? const Text(
+                      'No members to show yet.',
+                      style: TextStyle(color: _muted),
+                    )
+                  : Column(
+                      children: [
+                        for (final member in members)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFFE2EDE3),
+                              foregroundColor: _green,
+                              child: member.profile?.photoUrl == null
+                                  ? const Icon(Icons.person_outline_rounded)
+                                  : ClipOval(
+                                      child: Image.network(
+                                        member.profile!.photoUrl!,
+                                        width: 40,
+                                        height: 40,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => const Icon(
+                                          Icons.person_outline_rounded,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                            title: Text(
+                              member.profile?.username ?? 'Member',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: _ink,
+                              ),
+                            ),
+                            subtitle: Text(
+                              member.member.role,
+                              style: const TextStyle(
+                                color: _muted,
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: member.member.role == 'owner'
+                                ? const Chip(
+                                    label: Text('Owner'),
+                                    side: BorderSide.none,
+                                  )
+                                : IconButton(
+                                    tooltip:
+                                        'Remove ${member.profile?.username ?? 'member'}',
+                                    icon: const Icon(
+                                      Icons.person_remove_outlined,
+                                      color: Color(0xFFB3261E),
+                                    ),
+                                    onPressed: () => _onRemoveMember(
+                                      member.member.uid,
+                                      member.profile?.username ?? 'this member',
+                                    ),
+                                  ),
+                          ),
+                      ],
+                    ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Could not load members.',
+                    style: TextStyle(color: _muted),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        ref.invalidate(groupMembersProvider(widget.groupId)),
+                    child: const Text('Try again'),
+                  ),
+                ],
+              ),
+            ),
       ),
-    );
-  }
+      const SizedBox(height: 24),
+      _SettingsCard(
+        icon: Icons.delete_outline_rounded,
+        title: 'Delete this group',
+        subtitle:
+            'Permanently remove the group and its content. This cannot be undone.',
+        danger: true,
+        child: OutlinedButton.icon(
+          onPressed: _onDeleteGroup,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFB3261E),
+            side: const BorderSide(color: Color(0xFFE6BDB9)),
+          ),
+          icon: const Icon(Icons.delete_outline_rounded, size: 19),
+          label: const Text('Delete group'),
+        ),
+      ),
+    ],
+  );
+}
 
-  Widget _buildModuleToggle(String label, String moduleId, bool value) {
-    return SwitchListTile(
-      title: Text(label, style: const TextStyle(color: Colors.white, fontSize: 16)),
-      value: value,
-      activeTrackColor: Colors.blue.withValues(alpha: 0.5),
-      activeThumbColor: Colors.blue, // This is actually for the thumb
-      onChanged: (bool newValue) async {
-        setState(() => _isLoading = true);
-        try {
-          final currentModules = Map<String, bool>.from(
-            (await ref.read(databaseRepositoryProvider).getGroupMeta(widget.groupId))?.enabledModules ?? {}
-          );
-          currentModules[moduleId] = newValue;
-          await ref.read(databaseRepositoryProvider).updateGroupMeta(widget.groupId, {
-            'enabledModules': currentModules,
-          });
-        } finally {
-          if (mounted) setState(() => _isLoading = false);
-        }
-      },
-      contentPadding: EdgeInsets.zero,
-    );
-  }
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+    this.danger = false,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final bool danger;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 600 ? 20 : 28),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: danger ? const Color(0xFFEAD2CF) : _border),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x06172B20),
+          blurRadius: 20,
+          offset: Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              color: danger ? const Color(0xFFB3261E) : _green,
+              size: 21,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: danger ? const Color(0xFFB3261E) : _ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          style: const TextStyle(color: _muted, fontSize: 13, height: 1.5),
+        ),
+        const SizedBox(height: 24),
+        child,
+      ],
+    ),
+  );
 }
