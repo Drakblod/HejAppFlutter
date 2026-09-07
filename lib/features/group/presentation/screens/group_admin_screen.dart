@@ -909,7 +909,9 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
               _modules[i].description,
               style: const TextStyle(color: _muted, fontSize: 12),
             ),
-            value: group.enabledModules[_modules[i].id] ?? (i < 4),
+            value:
+                group.enabledModules[_modules[i].id] ??
+                (_modules[i].id == 'polls' || i < 4),
             onChanged: _isLoading
                 ? null
                 : (enabled) => _toggleModule(_modules[i].id, enabled),

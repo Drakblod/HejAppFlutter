@@ -77,7 +77,7 @@ class DatabaseRepository {
         'calendar': true,
         'suggestions': true,
         'gallery': true,
-        'polls': false,
+        'polls': true,
       },
     };
 
