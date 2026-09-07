@@ -11,6 +11,7 @@ import '../models/shared_file.dart';
 import '../models/suggestion.dart';
 import '../models/gallery_item.dart';
 import '../models/group_poll.dart';
+import '../models/group_task.dart';
 
 part 'database_repository.g.dart';
 
@@ -78,6 +79,7 @@ class DatabaseRepository {
         'suggestions': true,
         'gallery': true,
         'polls': true,
+        'tasks': true,
       },
     };
 
@@ -138,6 +140,45 @@ class DatabaseRepository {
 
   Future<void> closePoll(String groupId, String pollId) =>
       _db.ref('groupPolls/$groupId/$pollId/isClosed').set(true);
+
+  // --- Tasks ---
+  Stream<List<GroupTask>> streamTasks(String groupId) =>
+      _db.ref('groupTasks/$groupId').onValue.map((event) {
+        final map = event.snapshot.value as Map<dynamic, dynamic>?;
+        if (map == null) return const <GroupTask>[];
+        final tasks = map.entries
+            .map(
+              (entry) => GroupTask.fromJson(
+                entry.key.toString(),
+                entry.value as Map<dynamic, dynamic>,
+              ),
+            )
+            .toList();
+        tasks.sort((a, b) {
+          if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
+          return (a.dueAt ?? 1 << 62).compareTo(b.dueAt ?? 1 << 62);
+        });
+        return tasks;
+      });
+
+  Future<void> createTask({
+    required String groupId,
+    required String title,
+    required String creatorId,
+    String? assigneeId,
+    int? dueAt,
+  }) => _db.ref('groupTasks/$groupId').push().set({
+    'groupId': groupId,
+    'title': title,
+    'creatorId': creatorId,
+    'assigneeId': assigneeId,
+    'dueAt': dueAt,
+    'createdAt': ServerValue.timestamp,
+    'isDone': false,
+  });
+
+  Future<void> setTaskDone(String groupId, String taskId, bool isDone) =>
+      _db.ref('groupTasks/$groupId/$taskId/isDone').set(isDone);
 
   // --- Messages ---
 

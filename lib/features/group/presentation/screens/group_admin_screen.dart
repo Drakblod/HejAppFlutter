@@ -63,6 +63,12 @@ const _modules = [
     description: 'Let the group vote and make decisions together.',
     icon: Icons.how_to_vote_outlined,
   ),
+  (
+    id: 'tasks',
+    title: 'Tasks',
+    description: 'Turn group decisions into clear next steps.',
+    icon: Icons.task_alt_rounded,
+  ),
 ];
 const _colors = [
   (value: '0xFF2F7D32', label: 'Forest'),
@@ -911,7 +917,9 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
             ),
             value:
                 group.enabledModules[_modules[i].id] ??
-                (_modules[i].id == 'polls' || i < 4),
+                (_modules[i].id == 'polls' ||
+                    _modules[i].id == 'tasks' ||
+                    i < 4),
             onChanged: _isLoading
                 ? null
                 : (enabled) => _toggleModule(_modules[i].id, enabled),

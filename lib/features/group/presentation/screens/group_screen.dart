@@ -23,6 +23,7 @@ import '../views/calendar_view.dart';
 import '../views/ocr_view.dart';
 import '../views/gallery_view.dart';
 import '../views/polls_view.dart';
+import '../views/tasks_view.dart';
 import '../../providers/meeting_providers.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
@@ -123,6 +124,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
             'icon': Icons.how_to_vote_rounded,
             'label': 'DECISIONS',
             'view': PollsView(groupId: widget.groupId),
+          },
+          {
+            'id': 'tasks',
+            'icon': Icons.task_alt_rounded,
+            'label': 'TASKS',
+            'view': TasksView(groupId: widget.groupId),
           },
         ];
 

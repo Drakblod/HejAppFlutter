@@ -46,6 +46,7 @@ class Group {
       'ocr': rawModules?['ocr'] ?? false,
       'gallery': rawModules?['gallery'] ?? false,
       'polls': rawModules?['polls'] ?? true,
+      'tasks': rawModules?['tasks'] ?? true,
     };
 
     return Group(
