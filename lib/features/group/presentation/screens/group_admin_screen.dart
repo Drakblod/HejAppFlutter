@@ -57,6 +57,12 @@ const _modules = [
     description: 'Collect photos and shared memories.',
     icon: Icons.photo_library_outlined,
   ),
+  (
+    id: 'polls',
+    title: 'Decisions & polls',
+    description: 'Let the group vote and make decisions together.',
+    icon: Icons.how_to_vote_outlined,
+  ),
 ];
 const _colors = [
   (value: '0xFF2F7D32', label: 'Forest'),

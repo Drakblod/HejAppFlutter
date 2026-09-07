@@ -10,6 +10,7 @@ import '../models/group_member.dart';
 import '../models/shared_file.dart';
 import '../models/suggestion.dart';
 import '../models/gallery_item.dart';
+import '../models/group_poll.dart';
 
 part 'database_repository.g.dart';
 
@@ -76,6 +77,7 @@ class DatabaseRepository {
         'calendar': true,
         'suggestions': true,
         'gallery': true,
+        'polls': false,
       },
     };
 
@@ -86,6 +88,56 @@ class DatabaseRepository {
     });
     await _db.ref('userGroups/$ownerId/$groupId').set(true);
   }
+
+  // --- Polls ---
+
+  Stream<List<GroupPoll>> streamPolls(String groupId) {
+    return _db.ref('groupPolls/$groupId').onValue.map((event) {
+      final map = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (map == null) return const <GroupPoll>[];
+      final polls = map.entries
+          .map(
+            (entry) => GroupPoll.fromJson(
+              entry.key.toString(),
+              entry.value as Map<dynamic, dynamic>,
+            ),
+          )
+          .toList();
+      polls.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return polls;
+    });
+  }
+
+  Future<void> createPoll({
+    required String groupId,
+    required String question,
+    required List<String> options,
+    required String creatorId,
+    required int closesAt,
+  }) async {
+    final ref = _db.ref('groupPolls/$groupId').push();
+    await ref.set({
+      'groupId': groupId,
+      'question': question,
+      'options': options,
+      'votes': <String, String>{},
+      'creatorId': creatorId,
+      'createdAt': ServerValue.timestamp,
+      'closesAt': closesAt,
+      'isClosed': false,
+    });
+  }
+
+  Future<void> voteInPoll({
+    required String groupId,
+    required String pollId,
+    required String userId,
+    required int optionIndex,
+  }) =>
+      _db.ref('groupPolls/$groupId/$pollId/votes/$userId').set('$optionIndex');
+
+  Future<void> closePoll(String groupId, String pollId) =>
+      _db.ref('groupPolls/$groupId/$pollId/isClosed').set(true);
 
   // --- Messages ---
 

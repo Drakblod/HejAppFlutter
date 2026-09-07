@@ -22,6 +22,7 @@ import '../views/files_view.dart';
 import '../views/calendar_view.dart';
 import '../views/ocr_view.dart';
 import '../views/gallery_view.dart';
+import '../views/polls_view.dart';
 import '../../providers/meeting_providers.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
@@ -116,6 +117,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
             'icon': Icons.photo_library_rounded,
             'label': group.galleryLabel ?? 'GALLERY',
             'view': GalleryView(groupId: widget.groupId),
+          },
+          {
+            'id': 'polls',
+            'icon': Icons.how_to_vote_rounded,
+            'label': 'DECISIONS',
+            'view': PollsView(groupId: widget.groupId),
           },
         ];
 
