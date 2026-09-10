@@ -47,6 +47,7 @@ class Group {
       'gallery': rawModules?['gallery'] ?? false,
       'polls': rawModules?['polls'] ?? true,
       'tasks': rawModules?['tasks'] ?? true,
+      'calendarBox': rawModules?['calendarBox'] ?? true,
     };
 
     return Group(

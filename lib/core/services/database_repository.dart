@@ -80,6 +80,7 @@ class DatabaseRepository {
         'gallery': true,
         'polls': true,
         'tasks': true,
+        'calendarBox': true,
       },
     };
 

@@ -22,6 +22,13 @@ const _sections = [
 ];
 const _modules = [
   (
+    id: 'calendarBox',
+    title: 'Kalenderlådan · Test',
+    description:
+        'Samla event från text och skärmdumpar. Granska innan du sparar.',
+    icon: Icons.event_available_outlined,
+  ),
+  (
     id: 'board',
     title: 'Bulletin board',
     description: 'Posts and updates for your group.',
@@ -919,7 +926,13 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
                 group.enabledModules[_modules[i].id] ??
                 (_modules[i].id == 'polls' ||
                     _modules[i].id == 'tasks' ||
-                    i < 4),
+                    [
+                      'calendarBox',
+                      'board',
+                      'chat',
+                      'files',
+                      'calendar',
+                    ].contains(_modules[i].id)),
             onChanged: _isLoading
                 ? null
                 : (enabled) => _toggleModule(_modules[i].id, enabled),

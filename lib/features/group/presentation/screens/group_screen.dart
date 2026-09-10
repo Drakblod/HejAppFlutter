@@ -24,6 +24,7 @@ import '../views/ocr_view.dart';
 import '../views/gallery_view.dart';
 import '../views/polls_view.dart';
 import '../views/tasks_view.dart';
+import '../views/calendar_box_view.dart';
 import '../../providers/meeting_providers.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
@@ -130,6 +131,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
             'icon': Icons.task_alt_rounded,
             'label': 'TASKS',
             'view': TasksView(groupId: widget.groupId),
+          },
+          {
+            'id': 'calendarBox',
+            'icon': Icons.event_available_outlined,
+            'label': 'Kalenderlådan',
+            'view': CalendarBoxView(groupId: widget.groupId),
           },
         ];
 
@@ -421,18 +428,22 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           children: activeModules.asMap().entries.map((entry) {
             final idx = entry.key;
             final m = entry.value;
             final isCalendar = m['id'] == 'calendar';
-            return _buildNavItem(
-              idx,
-              m['icon'] as IconData,
-              m['label'] as String,
-              group.fontFamily,
-              badgeCount: isCalendar ? activeProposalsCount : 0,
+            return SizedBox(
+              width: 100,
+              child: _buildNavItem(
+                idx,
+                m['icon'] as IconData,
+                m['label'] as String,
+                group.fontFamily,
+                badgeCount: isCalendar ? activeProposalsCount : 0,
+              ),
             );
           }).toList(),
         ),

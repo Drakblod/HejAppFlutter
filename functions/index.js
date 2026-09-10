@@ -16,6 +16,13 @@ const backgroundStyles = new Set([
   'Abstract',
 ]);
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
+const {createCalendarHandler} = require('./calendar-box');
+exports.calendarBox = onCall({
+  secrets: [openAiApiKey], timeoutSeconds: 90, memory: '512MiB', maxInstances: 3,
+}, createCalendarHandler({
+  db: admin.database(),
+  ai: () => new OpenAI({apiKey: openAiApiKey.value(), timeout: 65000, maxRetries: 0}),
+}));
 
 /**
  * Generates a group background through OpenAI and stores it in our own bucket.
