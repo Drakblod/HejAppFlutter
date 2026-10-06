@@ -36,6 +36,10 @@ Uppladdningar och privat-chatt-skrivningar går via `workspaceAccess`. Befintlig
 
 Publiceringsordning: deploya `customRating` och `workspaceAccess`, publicera databas- och Storage-regler, bygg webben med `/HejAppFlutter/` och pusha till `ios`. Äldre öppna klienter behöver laddas om eftersom direktuppladdningar och direkta DM-skrivningar nu nekas. Rating aktiveras per grupp i inställningarna; inga verkliga grupper får demoobjekt automatiskt.
 
+Verifiering 2026-10-06: 11 emulator-/integrationstester, 21 Node-tester och 12 Flutter-tester passerade. Release-build för webben lyckades. Efter backend- och regeldeploy verifierades autentiserad konfiguration, objekt, recensioner, nekad direktåtkomst, bild-uppladdning/nedladdning och privatmeddelanden i produktion med isolerade testkonton. Testkonton, testgrupp, bild och meddelanden togs bort efteråt. Kör `node scripts/smoke-rating-production.cjs --run` endast när ett sådant produktionstest uttryckligen är avsett.
+
+Driftuppföljning: Firebase CLI varnade vid deployment om Node 20:s kommande avveckling och misslyckad städning av byggbilder. Funktionerna deployades framgångsrikt, men runtime-uppgradering och kontroll av artifact-lagringen bör hanteras separat.
+
 Avgränsning: den äldre mötesplaneraren behåller sina delade röstarrayer inom gruppen. Inloggade användare kan läsa enskilda profiler och kontrollera gruppnamnet vid känd inbjudningskod. Detta är inte en fullständig säkerhetsrevision eller historisk granskning av tidigare öppet innehåll. Oanvända legacy-noder saknar klientåtkomst som standard. Återställ inte de tidigare öppna rotreglerna vid felsökning.
 
 ## Kontroller

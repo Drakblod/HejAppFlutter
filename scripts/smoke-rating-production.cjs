@@ -15,6 +15,10 @@ let adminDb, conversationId;
 const options = {skipLog: {body: true, resBody: true}};
 async function json(url, init = {}) {
   const response = await fetch(url, init);
+  if (!(response.headers.get('content-type') || '').includes('json')) {
+    const target = new URL(url);
+    throw Error(`Non-JSON HTTP ${response.status} from ${target.hostname}${target.pathname}`);
+  }
   const result = await response.json();
   if (!response.ok) throw Error(`HTTP ${response.status}: ${result.error?.status || result.error?.message || 'Request failed'}`);
   return result;
