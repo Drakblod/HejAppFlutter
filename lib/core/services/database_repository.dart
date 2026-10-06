@@ -1,4 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import '../models/group.dart';
@@ -273,13 +274,9 @@ class DatabaseRepository {
     required String firstUid,
     required String secondUid,
   }) async {
-    final conversationId = directConversationId(firstUid, secondUid);
-    await _db.ref().update({
-      'directConversations/$conversationId/participants/$firstUid': true,
-      'directConversations/$conversationId/participants/$secondUid': true,
-      'directConversations/$conversationId/updatedAt': ServerValue.timestamp,
-      'userDirectChats/$firstUid/$conversationId': true,
-      'userDirectChats/$secondUid/$conversationId': true,
+    await FirebaseFunctions.instance.httpsCallable('workspaceAccess').call({
+      'action': 'startDirect',
+      'recipientId': secondUid,
     });
   }
 
@@ -290,27 +287,10 @@ class DatabaseRepository {
     String? senderPhotoUrl,
     required String text,
   }) async {
-    final conversationId = directConversationId(senderId, recipientId);
-    final messageId = _db.ref('directMessages/$conversationId').push().key!;
-    final message = ChatMessage(
-      id: messageId,
-      groupId: conversationId,
-      senderId: senderId,
-      senderName: senderName,
-      senderPhotoUrl: senderPhotoUrl,
-      text: text,
-      ts: DateTime.now().millisecondsSinceEpoch,
-    );
-
-    await _db.ref().update({
-      'directMessages/$conversationId/$messageId': message.toJson(),
-      'directConversations/$conversationId/participants/$senderId': true,
-      'directConversations/$conversationId/participants/$recipientId': true,
-      'directConversations/$conversationId/updatedAt': ServerValue.timestamp,
-      'directConversations/$conversationId/lastMessage': text,
-      'directConversations/$conversationId/lastSenderId': senderId,
-      'userDirectChats/$senderId/$conversationId': true,
-      'userDirectChats/$recipientId/$conversationId': true,
+    await FirebaseFunctions.instance.httpsCallable('workspaceAccess').call({
+      'action': 'sendDirect',
+      'recipientId': recipientId,
+      'text': text,
     });
   }
 
@@ -414,8 +394,7 @@ class DatabaseRepository {
         uid,
         legacySnapshot.value as Map<dynamic, dynamic>,
       );
-      // Self-heal: Move to /profiles/ so next time is faster
-      await _db.ref('profiles/$uid').set(profile.toJson());
+      // Display legacy profiles without writing another user's data.
       return profile;
     }
 
@@ -521,7 +500,7 @@ class DatabaseRepository {
 
   Future<bool> groupExists(String groupId) async {
     if (groupId.isEmpty) return false;
-    final snapshot = await _db.ref('groups/$groupId').get();
+    final snapshot = await _db.ref('groups/$groupId/name').get();
     return snapshot.exists;
   }
 

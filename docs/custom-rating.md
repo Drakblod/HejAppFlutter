@@ -26,20 +26,26 @@ Saknade betyg visas som **Ej betygsatt**, aldrig som noll. Saknad metadata visas
 
 Återanvänd de generella metadatafältens stabila ID:n och typdefinitioner för en framtida Collection. Överför titel, bild och `metadataValues` via en servervaliderad importåtgärd, skapa ett ratingobjekt med eget ID och behåll en serverkontrollerad `sourceReference` till ursprungsobjektet. Lägg inte till påhittade recensioner vid överföring. Ingen List/Collection-modul ingår i den här leveransen.
 
-## Publiceringsspärr
+## Säkerhet och publicering
 
-Vid läsning av projektets faktiska RTDB-regler den 6 oktober 2026 var både `.read` och `.write` `true` på rotnivå. **Publicera inte Rating-backend innan detta är åtgärdat.** Callable-validering skyddar inte data som samtidigt kan skrivas direkt via öppna databasregler. Ett deny på bara `customRatings` räcker inte, eftersom ett tillåtande uttryck på föräldern har företräde.
+Vid läsning av projektets faktiska RTDB-regler den 6 oktober 2026 var både `.read` och `.write` `true` på rotnivå. Även Storage var öppet. De nya reglerna i `database.rules.json` och `storage.rules` ersätter detta med explicit åtkomst. Rating och Kalenderlådan är server-only. Ett deny på bara `customRatings` hade inte räckt med ett tillåtande uttryck på föräldern.
 
-Reglerna behöver inventeras, ändras och emulator-testas för befintliga klientflöden (inklusive medlemskap, ägarskap, profiler och modultogglar). Rating-data ska vara server-only: ingen direkt klientläsning eller skrivning. Även Storage-regler för den nya bildsökvägen ska förhindra direkt klientmutation. Detta bredare säkerhetsarbete och produktionspublicering är inte utfört i denna implementation. Ingen testdata har skrivits till produktionsgrupper.
+Reglerna har emulator-testats för gruppskapande, anslutning via inbjudningskod, utträde, medlemsborttagning, gruppborttagning, profiler, innehåll, omröstningar, uppgifter och privata chattar. Ägarskap och administratörsflaggor kan inte övertas av en vanlig medlem. Grupp-ID:n med kvarvarande privata data kan inte återanvändas efter borttagning. Rating-backend har också körts mot riktiga emulatortransaktioner.
 
-Efter säkerhetsarbetet: deploya callable `customRating` till `hejapp-a6614`, bygg webben med `/HejAppFlutter/` som base href och publicera frontend. Funktionens export finns i `functions/index.js`.
+Uppladdningar och privat-chatt-skrivningar går via `workspaceAccess`. Befintliga nedladdningslänkar med token fungerar fortfarande för den som har länken. Uppladdningar begränsas till 6 MB och 100 per användare/dag; Rating-bilder har fortfarande sin separata gräns på 2 MB. Privata chattar kan bara läsas av deltagarna och meddelandets avsändare hämtas från autentiseringen, inte klientens indata.
+
+Publiceringsordning: deploya `customRating` och `workspaceAccess`, publicera databas- och Storage-regler, bygg webben med `/HejAppFlutter/` och pusha till `ios`. Äldre öppna klienter behöver laddas om eftersom direktuppladdningar och direkta DM-skrivningar nu nekas. Rating aktiveras per grupp i inställningarna; inga verkliga grupper får demoobjekt automatiskt.
+
+Avgränsning: den äldre mötesplaneraren behåller sina delade röstarrayer inom gruppen. Inloggade användare kan läsa enskilda profiler och kontrollera gruppnamnet vid känd inbjudningskod. Detta är inte en fullständig säkerhetsrevision eller historisk granskning av tidigare öppet innehåll. Oanvända legacy-noder saknar klientåtkomst som standard. Återställ inte de tidigare öppna rotreglerna vid felsökning.
 
 ## Kontroller
 
 ```powershell
 cd functions
-node --test custom-rating.test.js calendar-box.test.js
+node --test custom-rating.test.js calendar-box.test.js workspace-access.test.js
 cd ..
+node scripts/build-database-rules.cjs --check
+node functions/node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --only database,storage --project demo-hej-security "npm --prefix security-tests test"
 flutter test test/rating_test.dart test/calendar_box_test.dart
 flutter analyze lib/features/rating
 flutter build web --base-href /HejAppFlutter/ --release

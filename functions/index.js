@@ -7,6 +7,10 @@ const crypto = require('crypto');
 
 admin.initializeApp();
 
+const {createWorkspaceHandler} = require('./workspace-access');
+exports.workspaceAccess = onCall({timeoutSeconds: 90, memory: '256MiB', maxInstances: 5},
+  createWorkspaceHandler({db: admin.database(), bucket: admin.storage().bucket(), auth: admin.auth()}));
+
 const {createRatingHandler} = require('./custom-rating');
 exports.customRating = onCall({
   timeoutSeconds: 60, memory: '256MiB', maxInstances: 3,

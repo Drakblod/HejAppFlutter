@@ -1,0 +1,184 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "groups": {
+      "$group": {
+        ".read": "auth != null && (!data.exists() || (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()))",
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid && !root.child('customRatings').child($group).exists() && !root.child('calendarBox').child($group).exists() && !root.child('messages').child($group).exists() && !root.child('postits').child($group).exists() && !root.child('files').child($group).exists() && !root.child('gallery').child($group).exists() && !root.child('groupTasks').child($group).exists() && !root.child('groupPolls').child($group).exists() && !root.child('groupProposals').child($group).exists() && !root.child('memberships').child($group).exists()) || data.child('ownerId').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['name','ownerId']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 160 && (!data.exists() || newData.child('ownerId').val() === data.child('ownerId').val())",
+        "name": {
+          ".read": "auth != null"
+        }
+      }
+    },
+    "memberships": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        ".write": "auth != null && root.child('groups').child($group).child('ownerId').val() === auth.uid && !newData.exists()",
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || (auth.uid === $uid && (!newData.exists() || (root.child('groups').child($group).exists() && ((!data.exists() && newData.child('role').val() === 'member') || (data.exists() && newData.child('role').val() === data.child('role').val()))))))",
+          ".validate": "newData.hasChildren(['role','joinedAt']) && (newData.child('role').val() === 'member' || newData.child('role').val() === 'admin' || newData.child('role').val() === 'owner')"
+        }
+      }
+    },
+    "userGroups": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$group": {
+          ".write": "auth != null && ((auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('memberships').child($group).child($uid).exists() || root.child('groups').child($group).child('ownerId').val() === auth.uid)) || (root.child('groups').child($group).child('ownerId').val() === auth.uid && !newData.exists()))",
+          ".validate": "newData.val() === true"
+        }
+      }
+    },
+    "profiles": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        "isAdmin": {
+          ".validate": "newData.val() === data.val() || (!data.exists() && newData.val() === false) || (!data.exists() && newData.val() === true && root.child('users').child($uid).child('isAdmin').val() === true)"
+        },
+        ".validate": "!data.child('isAdmin').exists() || newData.child('isAdmin').val() === data.child('isAdmin').val()"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        "isAdmin": {
+          ".validate": "newData.val() === data.val() || (!data.exists() && newData.val() === false) || (!data.exists() && newData.val() === true && root.child('users').child($uid).child('isAdmin').val() === true)"
+        },
+        ".validate": "!data.child('isAdmin').exists() || newData.child('isAdmin').val() === data.child('isAdmin').val()"
+      }
+    },
+    "usernames": {
+      "$name": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && (!newData.exists() || newData.val() === auth.uid)))"
+      }
+    },
+    "deviceTokens": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "messages": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        ".write": "auth != null && root.child('groups').child($group).child('ownerId').val() === auth.uid && !newData.exists()",
+        "$item": {
+          ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && ((!data.exists() && newData.child('senderId').val() === auth.uid) || data.child('senderId').val() === auth.uid || root.child('groups').child($group).child('ownerId').val() === auth.uid)",
+          ".validate": "newData.child('senderId').isString() && (!data.exists() || newData.child('senderId').val() === data.child('senderId').val())"
+        }
+      }
+    },
+    "postits": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        ".write": "auth != null && root.child('groups').child($group).child('ownerId').val() === auth.uid && !newData.exists()",
+        "$item": {
+          ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && ((!data.exists() && newData.child('senderId').val() === auth.uid) || data.child('senderId').val() === auth.uid || root.child('groups').child($group).child('ownerId').val() === auth.uid)",
+          ".validate": "newData.child('senderId').isString() && (!data.exists() || newData.child('senderId').val() === data.child('senderId').val())"
+        }
+      }
+    },
+    "files": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        ".write": "auth != null && root.child('groups').child($group).child('ownerId').val() === auth.uid && !newData.exists()",
+        "$item": {
+          ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && ((!data.exists() && newData.child('senderId').val() === auth.uid) || data.child('senderId').val() === auth.uid || root.child('groups').child($group).child('ownerId').val() === auth.uid)",
+          ".validate": "newData.child('senderId').isString() && (!data.exists() || newData.child('senderId').val() === data.child('senderId').val())"
+        }
+      }
+    },
+    "gallery": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        ".write": "auth != null && root.child('groups').child($group).child('ownerId').val() === auth.uid && !newData.exists()",
+        "$item": {
+          ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && ((!data.exists() && newData.child('uploaderId').val() === auth.uid) || data.child('uploaderId').val() === auth.uid || root.child('groups').child($group).child('ownerId').val() === auth.uid)",
+          ".validate": "newData.child('uploaderId').isString() && (!data.exists() || newData.child('uploaderId').val() === data.child('uploaderId').val())"
+        }
+      }
+    },
+    "groupTasks": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        "$item": {
+          ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && ((!data.exists() && newData.child('creatorId').val() === auth.uid) || data.child('creatorId').val() === auth.uid || root.child('groups').child($group).child('ownerId').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['title','creatorId','isDone']) && (!data.exists() || newData.child('creatorId').val() === data.child('creatorId').val())",
+          "isDone": {
+            ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && data.parent().exists()",
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      }
+    },
+    "groupPolls": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        "$item": {
+          ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && !data.exists() && newData.child('creatorId').val() === auth.uid && !newData.child('votes').exists()",
+          ".validate": "newData.hasChildren(['question','creatorId','options','closesAt','isClosed'])",
+          "isClosed": {
+            ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && (data.parent().child('creatorId').val() === auth.uid || root.child('groups').child($group).child('ownerId').val() === auth.uid)",
+            ".validate": "newData.isBoolean()"
+          },
+          "votes": {
+            "$uid": {
+              ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists()) && auth.uid === $uid && data.parent().parent().child('isClosed').val() !== true && data.parent().parent().child('closesAt').val() > now",
+              ".validate": "newData.isString() && data.parent().parent().child('options').child(newData.val()).exists()"
+            }
+          }
+        }
+      }
+    },
+    "groupProposals": {
+      "$group": {
+        ".read": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())",
+        ".write": "auth != null && (root.child('groups').child($group).child('ownerId').val() === auth.uid || root.child('memberships').child($group).child(auth.uid).exists())"
+      }
+    },
+    "directConversations": {
+      "$conversation": {
+        ".read": "auth != null && root.child('directConversations').child($conversation).child('participants').child(auth.uid).val() === true || (auth != null && !data.exists() && ($conversation.beginsWith(auth.uid + '__') || $conversation.endsWith('__' + auth.uid)))"
+      }
+    },
+    "directMessages": {
+      "$conversation": {
+        ".read": "auth != null && root.child('directConversations').child($conversation).child('participants').child(auth.uid).val() === true || (auth != null && !root.child('directConversations').child($conversation).exists() && ($conversation.beginsWith(auth.uid + '__') || $conversation.endsWith('__' + auth.uid)))"
+      }
+    },
+    "userDirectChats": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+    "customRatings": {
+      ".read": false,
+      ".write": false
+    },
+    "calendarBox": {
+      ".read": false,
+      ".write": false
+    },
+    "calendarBoxUsage": {
+      ".read": false,
+      ".write": false
+    },
+    "workspaceUploadUsage": {
+      ".read": false,
+      ".write": false
+    },
+    "global_suggestions": {
+      ".read": "auth != null",
+      "$item": {
+        ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || data.child('authorId').val() === auth.uid || (root.child('profiles').child(auth.uid).child('isAdmin').val() === true || root.child('users').child(auth.uid).child('isAdmin').val() === true))",
+        ".validate": "newData.child('authorId').isString() && (!data.exists() || newData.child('authorId').val() === data.child('authorId').val())"
+      }
+    }
+  }
+}

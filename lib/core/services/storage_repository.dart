@@ -1,112 +1,61 @@
+import 'dart:convert';
 import 'dart:typed_data';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'storage_repository.g.dart';
 
 class StorageRepository {
-  final FirebaseStorage _storage;
-
-  StorageRepository(this._storage);
-
-  String _guessContentType(String fileName) {
-    final ext = fileName.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'png':
-        return 'image/png';
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'webp':
-        return 'image/webp';
-      case 'gif':
-        return 'image/gif';
-      case 'heic':
-        return 'image/heic';
-      default:
-        return 'image/jpeg';
+  Future<String> _upload(
+    String kind,
+    Uint8List bytes,
+    String fileName, {
+    String? groupId,
+  }) async {
+    if (bytes.length > 6 * 1024 * 1024) {
+      throw Exception('Filen får vara högst 6 MB.');
     }
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'workspaceAccess',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 100)),
+        )
+        .call({
+          'action': 'upload',
+          'kind': kind,
+          'fileName': fileName,
+          'base64': base64Encode(bytes),
+          if (groupId != null) 'groupId': groupId,
+        });
+    return result.data['url'] as String;
   }
 
   Future<String> uploadChatPhoto({
     required String groupId,
     required Uint8List bytes,
     required String fileName,
-  }) async {
-    final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
-    final ref = _storage.ref().child('chat_photos').child(groupId).child(name);
-    
-    final uploadTask = await ref.putData(
-      bytes,
-      SettableMetadata(contentType: _guessContentType(fileName)),
-    );
-    return await uploadTask.ref.getDownloadURL();
-  }
-
+  }) => _upload('chat', bytes, fileName, groupId: groupId);
   Future<String> uploadProfilePhoto({
     required String uid,
     required Uint8List bytes,
     required String fileName,
-  }) async {
-    final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
-    final ref = _storage.ref().child('profile_photos').child(uid).child(name);
-    
-    final uploadTask = await ref.putData(
-      bytes,
-      SettableMetadata(contentType: _guessContentType(fileName)),
-    );
-    return await uploadTask.ref.getDownloadURL();
-  }
-
+  }) => _upload('profile', bytes, fileName);
   Future<String> uploadGroupBackground({
     required String groupId,
     required Uint8List bytes,
     required String fileName,
-  }) async {
-    final name = 'bg_${DateTime.now().millisecondsSinceEpoch}_$fileName';
-    final ref = _storage.ref().child('group_backgrounds').child(groupId).child(name);
-    
-    final uploadTask = await ref.putData(
-      bytes,
-      SettableMetadata(contentType: _guessContentType(fileName)),
-    );
-    return await uploadTask.ref.getDownloadURL();
-  }
-
+  }) => _upload('background', bytes, fileName, groupId: groupId);
   Future<String> uploadSharedFile({
     required String groupId,
     required Uint8List bytes,
     required String fileName,
-  }) async {
-    final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
-    final ref = _storage.ref().child('shared_files').child(groupId).child(name);
-    
-    final uploadTask = await ref.putData(
-      bytes,
-      SettableMetadata(
-        contentDisposition: 'attachment; filename="$fileName"',
-      ),
-    );
-    return await uploadTask.ref.getDownloadURL();
-  }
-
+  }) => _upload('file', bytes, fileName, groupId: groupId);
   Future<String> uploadGalleryPhoto({
     required String groupId,
     required Uint8List bytes,
     required String fileName,
-  }) async {
-    final name = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
-    final ref = _storage.ref().child('gallery_photos').child(groupId).child(name);
-    
-    final uploadTask = await ref.putData(
-      bytes,
-      SettableMetadata(contentType: _guessContentType(fileName)),
-    );
-    return await uploadTask.ref.getDownloadURL();
-  }
+  }) => _upload('gallery', bytes, fileName, groupId: groupId);
 }
 
 @riverpod
-StorageRepository storageRepository(Ref ref) {
-  return StorageRepository(FirebaseStorage.instance);
-}
+StorageRepository storageRepository(Ref ref) => StorageRepository();

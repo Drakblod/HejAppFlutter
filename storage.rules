@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // All uploads now pass through an authenticated callable which checks RTDB
+    // membership. Existing download-token URLs remain usable by their holders.
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
