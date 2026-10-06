@@ -22,6 +22,13 @@ const _sections = [
 ];
 const _modules = [
   (
+    id: 'rating',
+    title: 'Betyg & ranking',
+    description:
+        'Ert eget arkiv med egna kriterier, fält och topplista. Aktivera och öppna modulen för att konfigurera den.',
+    icon: Icons.workspace_premium_outlined,
+  ),
+  (
     id: 'calendarBox',
     title: 'Kalenderlådan · Test',
     description:

@@ -6,6 +6,8 @@ import '../../providers/postit_providers.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../widgets/post_it_widget.dart';
 import '../../models/board_item.dart';
+import '../../../rating/data/rating_repository.dart';
+import '../../../rating/presentation/rating_view.dart';
 
 class BulletinBoardView extends ConsumerWidget {
   final String groupId;
@@ -44,55 +46,75 @@ class BulletinBoardView extends ConsumerWidget {
       child: groupAsync.when(
         data: (group) => itemsAsync.when(
           data: (items) {
-            if (items.isEmpty) {
-              return const Center(
-                child: Text('No items on the board. Add one!'),
-              );
-            }
-
             return RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(boardItemsProvider(groupId));
                 ref.invalidate(groupMetaProvider(groupId));
+                if (group?.enabledModules['rating'] == true) {
+                  ref.invalidate(ratingArchiveProvider(groupId));
+                }
                 await Future.delayed(const Duration(milliseconds: 500));
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 12,
-                ),
-                child: MasonryGridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    final isAuthor = item.senderId == currentUser?.uid;
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+                    sliver: SliverMainAxisGroup(
+                      slivers: [
+                        if (group?.enabledModules['rating'] == true)
+                          SliverToBoxAdapter(
+                            child: RatingSummary(groupId: groupId),
+                          ),
+                        if (items.isEmpty)
+                          const SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Center(
+                                child: Text('No items on the board. Add one!'),
+                              ),
+                            ),
+                          ),
+                        SliverMasonryGrid.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            final isAuthor = item.senderId == currentUser?.uid;
 
-                    // ONLY allow deleting yellow post-its, not chat messages from the board
-                    final canDelete =
-                        item.type == BoardItemType.postit && isAuthor;
+                            // ONLY allow deleting yellow post-its, not chat messages from the board
+                            final canDelete =
+                                item.type == BoardItemType.postit && isAuthor;
 
-                    return PostItWidget(
-                      item: item,
-                      fontFamily: group?.fontFamily,
-                      onDelete: canDelete
-                          ? () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Deleting post-it...'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                              ref
-                                  .read(postItControllerProvider.notifier)
-                                  .deletePostIt(groupId, item.id);
-                            }
-                          : null,
-                    );
-                  },
-                ),
+                            return PostItWidget(
+                              item: item,
+                              fontFamily: group?.fontFamily,
+                              onDelete: canDelete
+                                  ? () {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Deleting post-it...'),
+                                          duration: Duration(seconds: 1),
+                                        ),
+                                      );
+                                      ref
+                                          .read(
+                                            postItControllerProvider.notifier,
+                                          )
+                                          .deletePostIt(groupId, item.id);
+                                    }
+                                  : null,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           },

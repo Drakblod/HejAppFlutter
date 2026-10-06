@@ -7,6 +7,11 @@ const crypto = require('crypto');
 
 admin.initializeApp();
 
+const {createRatingHandler} = require('./custom-rating');
+exports.customRating = onCall({
+  timeoutSeconds: 60, memory: '256MiB', maxInstances: 3,
+}, createRatingHandler({db: admin.database(), bucket: admin.storage().bucket()}));
+
 const backgroundStyles = new Set([
   'Cinematic',
   'Minimalist',

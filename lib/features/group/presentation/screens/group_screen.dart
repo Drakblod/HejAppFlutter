@@ -26,6 +26,8 @@ import '../views/polls_view.dart';
 import '../views/tasks_view.dart';
 import '../views/calendar_box_view.dart';
 import '../../providers/meeting_providers.dart';
+import '../../../rating/data/rating_repository.dart';
+import '../../../rating/presentation/rating_view.dart';
 
 class GroupScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -83,6 +85,13 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
         }
 
         // Define all possible modules
+        final ratingTitle = group.enabledModules['rating'] == true
+            ? ref
+                  .watch(ratingArchiveProvider(widget.groupId))
+                  .value
+                  ?.config
+                  ?.title
+            : null;
         final List<Map<String, dynamic>> allModules = [
           {
             'id': 'board',
@@ -137,6 +146,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen>
             'icon': Icons.event_available_outlined,
             'label': 'Kalenderlådan',
             'view': CalendarBoxView(groupId: widget.groupId),
+          },
+          {
+            'id': 'rating',
+            'icon': Icons.workspace_premium_outlined,
+            'label': ratingTitle ?? 'Betyg & ranking',
+            'view': RatingView(groupId: widget.groupId),
           },
         ];
 

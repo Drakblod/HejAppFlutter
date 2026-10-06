@@ -9,6 +9,7 @@ import '../../features/group/presentation/screens/group_admin_screen.dart';
 import '../../features/chat/presentation/screens/direct_chat_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/suggestions_screen.dart';
+import '../../features/rating/presentation/rating_view.dart';
 
 part 'app_router.g.dart';
 
@@ -64,6 +65,13 @@ GoRouter appRouter(Ref ref) {
           final groupId = state.pathParameters['groupId']!;
           return GroupAdminScreen(groupId: groupId);
         },
+      ),
+      GoRoute(
+        path: '/group/:groupId/rating/:itemId',
+        builder: (context, state) => RatingDetailPage(
+          groupId: state.pathParameters['groupId']!,
+          itemId: state.pathParameters['itemId']!,
+        ),
       ),
     ],
   );
